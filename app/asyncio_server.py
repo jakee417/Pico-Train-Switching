@@ -1,33 +1,8 @@
 """Web server for a Raspberry Pi Pico W."""
-import network
-from time import sleep
-import machine
 import uasyncio as asyncio
 
-from app.secrets import SSID, PASSWORD
-from app.constants import Signals, MAX_WAIT, HTTPSignals, SERVING_ADDRESS, PORT
+from app.constants import Signals, HTTPSignals, SERVING_ADDRESS, PORT
 from app.picozero import pico_temp_sensor, pico_led
-
-
-def connect() -> None:
-    print('Connecting to Network...')
-    wlan = network.WLAN(network.STA_IF)
-    wlan.active(True)
-    wlan.connect(SSID, PASSWORD)
-
-    max_wait = MAX_WAIT
-    while max_wait > 0:
-        if wlan.status() < 0 or wlan.status() >= 3:
-            break
-        max_wait -= 1
-        print('Waiting for connection...')
-        sleep(1)
-
-    if wlan.status() != 3:
-        raise RuntimeError('Network connection failed.')
-    else:
-        status = wlan.ifconfig()
-        print(f"Connected:{status[0]}")
 
 
 async def serve_client(reader, writer):
@@ -82,7 +57,6 @@ def webpage(state: str) -> str:
 
 
 async def main():
-    connect()
     asyncio.create_task(
         asyncio.start_server(serve_client, SERVING_ADDRESS, PORT)
     )
@@ -94,10 +68,3 @@ async def main():
         pico_led.toggle()
         await asyncio.sleep(5)
         beat += 1
-
-try:
-    asyncio.run(main())
-except KeyboardInterrupt:
-    machine.reset()
-finally:
-    asyncio.new_event_loop()
