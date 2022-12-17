@@ -1,0 +1,1 @@
+rshell -p /dev/tty.usbmodem142101 --buffer-size 512
