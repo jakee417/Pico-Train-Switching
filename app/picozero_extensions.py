@@ -1,5 +1,4 @@
 from app.picozero import Servo
-from app.exceptions import OutputDeviceBadValue
 
 class AngularServo(Servo):
     """
@@ -95,7 +94,7 @@ class AngularServo(Servo):
             (max_angle <= initial_angle <= min_angle)):
             initial_value = 2 * ((initial_angle - min_angle) / self._angular_range) - 1
         else:
-            raise OutputDeviceBadValue(
+            raise Exception(
                 "AngularServo angle must be between %s and %s, or None" %
                 (min_angle, max_angle))
         super(AngularServo, self).__init__(
