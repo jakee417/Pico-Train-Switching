@@ -2,34 +2,26 @@ import network
 from time import sleep
 from network import WLAN
 
-from app.secrets import (
-    AP_SSID,
-    AP_PASSWORD,
-    SSID,
-    PASSWORD,
-)
+from app.secrets import SSID, PASSWORD, AP_SSID, AP_PASSWORD
 
-MAX_WAIT: int = 10
-
+MAX_WAIT: int = 5
 
 def connect() -> None:
     wlan = connect_as_client()
 
     if wlan.status() != 3:
         print("---- Could not connect as client...")
-        wlan = connect_as_access_point()
+        wlan = connect_as_access_point()    
 
     status = wlan.ifconfig()
-    print(f"---- Connected: \n{status[0]}")
-
+    print(f"Connected: \n{status[0]}")
 
 def connect_as_access_point() -> WLAN:
-    print(f"---- Connecting as access point, SSID: {AP_SSID}")
+    print(f"---- Connecting as access point to ssid: {AP_SSID}")
     wlan = network.WLAN(network.AP_IF)
     wlan.config(essid=AP_SSID, password=AP_PASSWORD)
     wlan.active(True)
     return wlan
-
 
 def connect_as_client() -> WLAN:
     print("---- Connecting as client...")

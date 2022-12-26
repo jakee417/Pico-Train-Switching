@@ -1,4 +1,4 @@
-from app.picozero import Servo
+from app.lib.picozero import Servo
 
 class AngularServo(Servo):
     """
