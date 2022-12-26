@@ -4,6 +4,8 @@ from json import dumps
 # Import this to avoid memory allocation errors
 import app.picozero as picozero
 import app.tinyweb as tinyweb
+from app.tinyweb import request as Request
+from app.tinyweb import response as Response
 from app.server_methods import (
     get,
     load_json,
@@ -12,33 +14,51 @@ from app.server_methods import (
     toggle_pins,
     toggle_index,
     reset_index,
-    save_json
+    save_json,
+    print_devices
 )
+
+
+SERVING_IP: str = "0.0.0.0"
+SERVING_PORT: int = 80
 
 app = tinyweb.webserver()
 
-post("1,2", "relay")
-post("4,5", "relay")
+
+def led_flash(func):
+    async def wrapper(*args, **kwargs):
+        picozero.pico_led.on()
+        await func(*args, **kwargs)
+        picozero.pico_led.off()
+    return wrapper
 
 
 @app.route("/devices")
-async def devices(request, response) -> None:
-    picozero.pico_led.on()
+@led_flash
+async def devices(_: Request, response: Response) -> None:
     await response.start_html()
-    await response.send(dumps(get()))
-    picozero.pico_led.off()
+    await response.send(
+        dumps(
+            get()
+        )
+    )
 
 
 @app.route("/devices/get")
-async def devices_get(request, response) -> None:
-    picozero.pico_led.on()
-    await response.start_html()
-    await response.send(dumps(get()))
-    picozero.pico_led.off()
+async def devices_get(
+    _: Request,
+    response: Response
+) -> None:
+    await response.redirect('/devices')
 
 
 @app.route("/devices/toggle/pins/<pins>")
-async def devices_toggle_pins(request, response, pins: str) -> None:
+@led_flash
+async def devices_toggle_pins(
+    _: Request,
+    response: Response,
+    pins: str
+) -> None:
     await response.start_html()
     await response.send(
         dumps(
@@ -48,7 +68,12 @@ async def devices_toggle_pins(request, response, pins: str) -> None:
 
 
 @app.route('/devices/toggle/<device>')
-async def devices_toggle_index(request, response, device: str) -> None:
+@led_flash
+async def devices_toggle_index(
+    _: Request,
+    response: Response,
+    device: str
+) -> None:
     await response.start_html()
     await response.send(
         dumps(
@@ -58,7 +83,12 @@ async def devices_toggle_index(request, response, device: str) -> None:
 
 
 @app.route('/devices/reset/<device>')
-async def devices_reset_index(request, response, device: str) -> None:
+@led_flash
+async def devices_reset_index(
+    _: Request,
+    response: Response,
+    device: str
+) -> None:
     await response.start_html()
     await response.send(
         dumps(
@@ -68,7 +98,12 @@ async def devices_reset_index(request, response, device: str) -> None:
 
 
 @app.route("/devices/load/<name>")
-async def devices_load_json(request, response, name: str) -> None:
+@led_flash
+async def devices_load_json(
+    _: Request,
+    response: Response,
+    name: str
+) -> None:
     await response.start_html()
     await response.send(
         dumps(
@@ -78,7 +113,12 @@ async def devices_load_json(request, response, name: str) -> None:
 
 
 @app.route('/devices/remove/<name>')
-async def devices_remove_json(request, response, name: str) -> None:
+@led_flash
+async def devices_remove_json(
+    _: Request,
+    response: Response,
+    name: str
+) -> None:
     await response.start_html()
     await response.send(
         dumps(
@@ -88,7 +128,12 @@ async def devices_remove_json(request, response, name: str) -> None:
 
 
 @app.route('/devices/save/<name>')
-async def devices_save_json(request, response, name: str) -> None:
+@led_flash
+async def devices_save_json(
+    _: Request,
+    response: Response,
+    name: str
+) -> None:
     await response.start_html()
     await response.send(
         dumps(
@@ -98,7 +143,11 @@ async def devices_save_json(request, response, name: str) -> None:
 
 
 def run():
-    app.run(host='0.0.0.0', port=80)
+    post("1,2", "relay")
+    post("4,5", "relay")
+    post("6", "disconnect")
+    print_devices()
+    app.run(host=SERVING_IP, port=SERVING_PORT)
 
 
 if __name__ == '__main__':
