@@ -21,7 +21,7 @@ GPIO_PINS: set[int] = set(
 devices: OrderedDict[str, BinaryDevice] = OrderedDict({})
 pin_pool: set[int] = GPIO_PINS.copy()
 
-PROFILE_PATH = './app/profiles/'
+PROFILE_PATH = "./app/profiles/"
 DEFAULT_PATH = PROFILE_PATH + "cfg.json"
 
 # TODO: Eventually, we want to send both the device type name and the required
@@ -52,14 +52,18 @@ def save_json(name: str) -> dict[str, object]:
     path: str = PROFILE_PATH + name.strip() + ".json"
     devices_json = devices_to_json(devices)
     order: list[str] = []
+    
     # NOTE: Explicitly save the order of the keys since ujson
     # does not maintain order when decoding.
     for k in devices_json.keys():
         order += [k]
-    devices_json["order"] = order
-    with open(path, 'w') as f:
+        
+    
+    devices_json["order"] = order  # type: ignore
+ 
+    with open(path, "w") as f:
         ujson.dump(devices_json, f)
-    print(f'++++ saved devices: {devices_json} as {path}')
+    print(f"++++ saved devices: {devices_json} as {path}")
     return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
 
 
@@ -71,7 +75,7 @@ def load_json(name: str) -> dict[str, object]:
 
     # Load a json string from a file stream.
     print(f"++++ JSON path: {path}")
-    with open(path, 'r') as f:
+    with open(path, "r") as f:
         json_str: str = f.read()
         print(f"++++ Loading JSON: {json_str}")
 
@@ -87,7 +91,7 @@ def load_json(name: str) -> dict[str, object]:
     # Update the global devices.
     close_devices(devices)  # close out old devices
     devices = construct_from_cfg(cfg)  # start new devices
-    print(f'++++ loaded devices: {devices}')
+    print(f"++++ loaded devices: {devices}")
     pin_pool = update_pin_pool(devices)
     return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
 
@@ -103,7 +107,7 @@ def remove_json(name: str) -> dict[str, object]:
 
 
 def toggle_index(device: int) -> dict[str, object]:
-    """Toggle the state of a device, or set to 'self.on_state' by default."""
+    """Toggle the state of a device, or set to "self.on_state" by default."""
     global devices
     global pin_pool
     device -= 1  # user will see devices as 1-indexed, convert to 0-indexed
@@ -125,12 +129,12 @@ def reset_index(device: int) -> dict[str, object]:
     device -= 1  # user will see devices as 1-indexed, convert to 0-indexed
     order = [k for k, v in devices.items()]  # get ordering of pins
     pins = order[device]
-    devices[pins].state = None
+    devices[pins].state = None  # type: ignore
     return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
 
 
 def toggle_pins(pins: str) -> dict[str, object]:
-    """Toggle the state of a device, or set to 'self.on_state' by default."""
+    """Toggle the state of a device, or set to "self.on_state" by default."""
     global devices
     global pin_pool
     _pins = convert_csv_tuples(pins)
@@ -202,18 +206,18 @@ def construct_from_cfg(
     # construct switches from config
     devices: OrderedDict[str, BinaryDevice] = OrderedDict({})
     for _, v in cfg.items():
-        _pins: tuple[int] = tuple(v['pins'])
+        _pins: tuple[int] = tuple(v["pins"]) # type: ignore
         _k: str = str(_pins)
-        _v: BinaryDevice = CLS_MAP.get(v['name'])(pin=_pins)
+        _v: BinaryDevice = CLS_MAP.get(v["name"])(pin=_pins)  # type: ignore
         devices.update({_k: _v})
     # Set states from configuration
     for k, v in devices.items():
-        v.action(cfg[str(k)]["state"])
+        v.action(str(cfg[str(k)]["state"]))
     return devices
 
 def convert_csv_tuples(inputs: str) -> tuple[int]:
     """Converts a comma seperated list of pins."""
-    inputs_split: list[str] = inputs.split(',')
+    inputs_split: list[str] = inputs.split(",")
     inputs_int: list[int] = [int(input) for input in inputs_split]
     inputs_int.sort()
     return tuple(inputs_int)
@@ -242,7 +246,7 @@ def devices_to_json(
 def get_all_profiles() -> list[str]:
     """Gets all of the profile names without file extension."""
     profiles = os.listdir(PROFILE_PATH)
-    profiles = [i.split('.')[0] for i in profiles]
+    profiles = [i.split(".")[0] for i in profiles]
     profiles.sort()
     return profiles
 

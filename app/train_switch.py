@@ -14,7 +14,8 @@ SAFE_SHUTDOWN: int = 4  # how long to wait before shutting down disconnect
 class BinaryDevice:
     required_pins: int = -1
     __pin: tuple[int] = tuple()
-    __state: str = None  # Optional[str]
+    # Optional[str]
+    __state: str = None  # type: ignore
     on_state: str = ""
     off_state: str = ""
 
