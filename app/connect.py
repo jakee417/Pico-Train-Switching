@@ -12,7 +12,7 @@ from app.secrets import (
 MAX_WAIT: int = 10
 
 
-def connect() -> None:
+def connect() -> WLAN:
     wlan = connect_as_client()
 
     if wlan.status() != 3:
@@ -20,7 +20,11 @@ def connect() -> None:
         wlan = connect_as_access_point()
 
     status = wlan.ifconfig()
-    print(f"---- Connected: \n{status[0]}")
+    print(f"---- Connected:")
+    print(status[0])
+    print(wlan.config("mac"))
+
+    return wlan
 
 
 def connect_as_access_point() -> WLAN:

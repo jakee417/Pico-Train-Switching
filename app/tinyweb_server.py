@@ -6,6 +6,7 @@ import app.lib.picozero as picozero
 import app.lib.tinyweb as tinyweb
 from app.lib.tinyweb import request as Request
 from app.lib.tinyweb import response as Response
+from app.connect import connect
 from app.server_methods import (
     get,
     load_json,
@@ -143,12 +144,7 @@ async def devices_save_json(
 
 
 def run():
-    post("1,2", "relay")
-    post("4,5", "relay")
-    post("6", "disconnect")
+    post("1", "disconnect")
+    post("2,3", "spur")
     print_devices()
     app.run(host=SERVING_IP, port=SERVING_PORT)
-
-
-if __name__ == '__main__':
-    run()

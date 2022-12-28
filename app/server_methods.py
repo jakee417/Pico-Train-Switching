@@ -5,17 +5,7 @@ from collections import OrderedDict
 from app.train_switch import CLS_MAP, BinaryDevice
 
 # Raspberry Pi Pico W RP2040 layout
-GPIO_PINS: set[int] = set(
-    [
-        1,  2,      4,  5,
-        6,  7,  8,  9, 10,
-        11, 12,     14, 15,
-        16, 17,     19, 20,
-        21, 22,     24, 25,
-        26, 27, 29,
-        31, 32,     34,
-    ]
-)
+GPIO_PINS: set[int] = set(range(29))
 
 # container for holding our devices - load or initialize
 devices: OrderedDict[str, BinaryDevice] = OrderedDict({})
@@ -38,6 +28,8 @@ DEVICE_TYPES: list[str] = list(
 ######################################################################
 # API Methods
 ######################################################################
+
+
 def get() -> dict[str, object]:
     """Retrives the current device container."""
     global devices
@@ -52,15 +44,14 @@ def save_json(name: str) -> dict[str, object]:
     path: str = PROFILE_PATH + name.strip() + ".json"
     devices_json = devices_to_json(devices)
     order: list[str] = []
-    
+
     # NOTE: Explicitly save the order of the keys since ujson
     # does not maintain order when decoding.
     for k in devices_json.keys():
         order += [k]
-        
-    
+
     devices_json["order"] = order  # type: ignore
- 
+
     with open(path, "w") as f:
         ujson.dump(devices_json, f)
     print(f"++++ saved devices: {devices_json} as {path}")
@@ -127,9 +118,9 @@ def reset_index(device: int) -> dict[str, object]:
     global devices
     global pin_pool
     device -= 1  # user will see devices as 1-indexed, convert to 0-indexed
-    order = [k for k, v in devices.items()]  # get ordering of pins
+    order = [k for k, _ in devices.items()]  # get ordering of pins
     pins = order[device]
-    devices[pins].state = None  # type: ignore
+    devices[pins].action(None) # type: ignore
     return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
 
 
@@ -199,6 +190,10 @@ def close_devices(devices: OrderedDict[str, BinaryDevice]) -> None:
     del devices  # garbage collect
 
 
+def close_devices_closure() -> None:
+    close_devices(devices)
+
+
 def construct_from_cfg(
     cfg: OrderedDict[str, dict[str, object]]
 ) -> OrderedDict[str, BinaryDevice]:
@@ -206,7 +201,7 @@ def construct_from_cfg(
     # construct switches from config
     devices: OrderedDict[str, BinaryDevice] = OrderedDict({})
     for _, v in cfg.items():
-        _pins: tuple[int] = tuple(v["pins"]) # type: ignore
+        _pins: tuple[int] = tuple(v["pins"])  # type: ignore
         _k: str = str(_pins)
         _v: BinaryDevice = CLS_MAP.get(v["name"])(pin=_pins)  # type: ignore
         devices.update({_k: _v})
@@ -214,6 +209,7 @@ def construct_from_cfg(
     for k, v in devices.items():
         v.action(str(cfg[str(k)]["state"]))
     return devices
+
 
 def convert_csv_tuples(inputs: str) -> tuple[int]:
     """Converts a comma seperated list of pins."""
