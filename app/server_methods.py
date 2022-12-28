@@ -170,13 +170,6 @@ def post(pins: str, device_type: str) -> dict[str, object]:
 ######################################################################
 # API Helper Methods
 ######################################################################
-def print_devices() -> None:
-    global devices
-    print("++++ Device Listing:")
-    for i, (_, v) in enumerate(devices.items()):
-        print(f"++++ {i}: {v}")
-
-
 class PinNotInPinPool(Exception):
     """Raised when a pin is accessed that is not available for use."""
     pass

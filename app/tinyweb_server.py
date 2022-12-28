@@ -16,7 +16,6 @@ from app.server_methods import (
     toggle_index,
     reset_index,
     save_json,
-    print_devices
 )
 
 
@@ -144,7 +143,6 @@ async def devices_save_json(
 
 
 def run():
-    post("1", "disconnect")
-    post("2,3", "spur")
-    print_devices()
+    post("1", "servo")
+    post("2,3", "relay")
     app.run(host=SERVING_IP, port=SERVING_PORT)
