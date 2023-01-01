@@ -1,7 +1,8 @@
 from machine import reset
 
+# Import this to avoid memory allocation failure.
+import app.lib.picozero
 from app.connect import connect
-import app.tinyweb_server as tinyweb_server
 import app.microdot_server as microdot_server
 from app.server_methods import close_devices_closure, post
 
