@@ -2,6 +2,7 @@ import os
 import ujson
 from collections import OrderedDict
 
+import app.lib.picozero as picozero
 from app.train_switch import CLS_MAP, BinaryDevice
 
 # Raspberry Pi Pico W RP2040 layout
@@ -24,6 +25,11 @@ DEVICE_TYPES: list[str] = list(
         for k, v in CLS_MAP.items()
     }.keys()
 )
+
+
+class StatusMessage(object):
+    SUCCESS: str = "success"
+    FAILURE: str = "failure"
 
 ######################################################################
 # API Methods
@@ -120,7 +126,7 @@ def reset_index(device: int) -> dict[str, object]:
     device -= 1  # user will see devices as 1-indexed, convert to 0-indexed
     order = [k for k, _ in devices.items()]  # get ordering of pins
     pins = order[device]
-    devices[pins].action(None) # type: ignore
+    devices[pins].action(None)  # type: ignore
     return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
 
 
@@ -170,6 +176,15 @@ def post(pins: str, device_type: str) -> dict[str, object]:
 ######################################################################
 # API Helper Methods
 ######################################################################
+
+def led_flash(func):
+    async def wrapper(*args, **kwargs):
+        picozero.pico_led.on()
+        await func(*args, **kwargs)
+        picozero.pico_led.off()
+    return wrapper
+
+
 class PinNotInPinPool(Exception):
     """Raised when a pin is accessed that is not available for use."""
     pass

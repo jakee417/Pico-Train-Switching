@@ -1,1 +1,0 @@
-rsync app /pyboard/app

@@ -6,16 +6,17 @@ import app.lib.picozero as picozero
 import app.lib.tinyweb as tinyweb
 from app.lib.tinyweb import request as Request
 from app.lib.tinyweb import response as Response
-from app.connect import connect
+from app.connect import scan, save_credentials
 from app.server_methods import (
+    StatusMessage,
     get,
     load_json,
-    post,
     remove_json,
     toggle_pins,
     toggle_index,
     reset_index,
     save_json,
+    led_flash,
 )
 
 
@@ -23,15 +24,6 @@ SERVING_IP: str = "0.0.0.0"
 SERVING_PORT: int = 80
 
 app = tinyweb.webserver()
-
-
-def led_flash(func):
-    async def wrapper(*args, **kwargs):
-        picozero.pico_led.on()
-        await func(*args, **kwargs)
-        picozero.pico_led.off()
-    return wrapper
-
 
 @app.route("/devices")
 @led_flash
@@ -49,7 +41,7 @@ async def devices_get(
     _: Request,
     response: Response
 ) -> None:
-    await response.redirect('/devices')
+    await response.redirect("/devices")
 
 
 @app.route("/devices/toggle/pins/<pins>")
@@ -67,7 +59,7 @@ async def devices_toggle_pins(
     )
 
 
-@app.route('/devices/toggle/<device>')
+@app.route("/devices/toggle/<device>")
 @led_flash
 async def devices_toggle_index(
     _: Request,
@@ -82,7 +74,7 @@ async def devices_toggle_index(
     )
 
 
-@app.route('/devices/reset/<device>')
+@app.route("/devices/reset/<device>")
 @led_flash
 async def devices_reset_index(
     _: Request,
@@ -112,7 +104,7 @@ async def devices_load_json(
     )
 
 
-@app.route('/devices/remove/<name>')
+@app.route("/devices/remove/<name>")
 @led_flash
 async def devices_remove_json(
     _: Request,
@@ -127,7 +119,7 @@ async def devices_remove_json(
     )
 
 
-@app.route('/devices/save/<name>')
+@app.route("/devices/save/<name>")
 @led_flash
 async def devices_save_json(
     _: Request,
@@ -142,7 +134,37 @@ async def devices_save_json(
     )
 
 
-def run():
-    post("1", "servo")
-    post("2,3", "relay")
-    app.run(host=SERVING_IP, port=SERVING_PORT)
+@app.route("/scan")
+@led_flash
+async def wlan_scan(
+    _: Request,
+    response: Response,
+) -> None:
+    await response.start_html()
+    await response.send(
+        dumps(
+            scan()
+        )
+    )
+
+
+@app.resource("/credentials", method="POST")
+@led_flash
+def credentials(data: dict[str, str]) -> dict[str, str]:
+    if data is None:
+        return {StatusMessage.FAILURE: "empty"}
+    else:
+        try:
+            save_credentials(data)
+            return {StatusMessage.SUCCESS: "created"}
+        except KeyError as _:
+            return {StatusMessage.FAILURE: "incorrect"}
+        except Exception as e:
+            return {StatusMessage.FAILURE: f"{e}"}
+
+
+def run() -> None:
+    app.run(
+        host=SERVING_IP,
+        port=SERVING_PORT
+    )
