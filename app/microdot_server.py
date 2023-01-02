@@ -1,5 +1,7 @@
 from json import dumps
-from app.connect import save_credentials, scan
+from app.connect import reset_credentials as _reset_credentials
+from app.connect import save_credentials as _save_credentials
+from app.connect import scan
 from app.lib.microdot import Microdot, Request, Response, redirect
 from app.server_methods import (
     StatusMessage,
@@ -71,14 +73,14 @@ def wlan_scan(_: Request) -> str:
 
 @app.post("/credentials")
 @led_flash
-def credentials(request: Request) -> str:
+def save_credentials(request: Request) -> str:
     json = request.json
     if json is None:
         print("++++ Credentials were empty...")
         return StatusMessage.FAILURE
     else:
         try:
-            save_credentials(json)
+            _save_credentials(json)
             return StatusMessage.SUCCESS
         except KeyError as _:
             print("++++ Credentials had bad keys...")
@@ -86,6 +88,12 @@ def credentials(request: Request) -> str:
         except Exception as e:
             print(f"++++ Failed with {e}...")
             return StatusMessage.FAILURE
+
+
+@app.get("/credentials/reset")
+def reset_credentials(_: Request) -> str:
+    _reset_credentials()
+    return StatusMessage.SUCCESS
 
 
 def run() -> None:

@@ -9,6 +9,11 @@ AP_SSID = "RailYard"
 AP_PASSWORD = "password"
 CREDENTIAL_PATH = "./app/secrets.json"
 
+sta: WLAN = network.WLAN(network.STA_IF)
+ap: WLAN = network.WLAN(network.AP_IF)
+sta.active(False)
+ap.active(False)
+
 
 class Credential(object):
     SSID: str = "SSID"
@@ -45,10 +50,8 @@ class ScanResult(object):
 
 
 def scan() -> list[dict[str, str]]:
-    wlan = network.WLAN(network.STA_IF)
-    wlan.active(True)
     return [
-        ScanResult(*s).json for s in wlan.scan()
+        ScanResult(*s).json for s in sta.scan()
     ]
 
 
@@ -86,49 +89,74 @@ def save_credentials(data: dict[str, str]) -> None:
         raise KeyError
 
 
-def connect() -> WLAN:
-    wlan = connect_as_client()
+def reset_credentials() -> None:
+    with open(CREDENTIAL_PATH, "w") as f:
+        json.dump({}, f)
+    print("---- Credentials reset...")
 
-    if wlan.status() != 3:
+
+def connect() -> None:
+    """Connect to a WLAN network.
+
+    First, attempt to connect as a station using provided credentials.
+    If this fails, then default to an Access Point using default credentials.
+    """
+    connect_as_station()
+
+    if sta.status() != 3:
         print("---- Could not connect as client...")
-        wlan = connect_as_access_point()
+        sta.disconnect()
+        sta.active(False)
+        connect_as_access_point()
+    else:
+        ap.disconnect()
+        ap.active(False)
 
-    status = wlan.ifconfig()
-    print(f"---- Connected:")
-    print(status[0])
-    mac = binascii.hexlify(wlan.config("mac")).decode("utf-8")
-    print(mac)
-    return wlan
+    print_wlan_info(ap)
+    print_wlan_info(sta)
 
 
-def connect_as_access_point() -> WLAN:
+def connect_as_access_point():
     print(f"---- Connecting as access point, SSID: {AP_SSID}")
-    wlan = network.WLAN(network.AP_IF)
-    wlan.config(essid=AP_SSID, password=AP_PASSWORD)
-    wlan.active(True)
-    return wlan
+    ap.config(essid=AP_SSID, password=AP_PASSWORD)
+    ap.active(True)
 
 
-def connect_as_client() -> WLAN:
+def connect_as_station():
     print("---- Connecting as client...")
-    wlan = network.WLAN(network.STA_IF)
-    wlan.active(True)
+    sta.active(True)
 
     # Load the cached ssid/password.
     ssid_info = load_credentials()
-
     ssid = ssid_info.get(Credential.SSID, None)
     password = ssid_info.get(Credential.PASSWORD, None)
 
-    if ssid is None or password is None:
-        return wlan
-    else:
-        wlan.connect(ssid, password)
+    if ssid is not None and password is not None:
+        sta.connect(ssid, password)
         wait = MAX_WAIT
         while wait > 0:
-            if wlan.status() < 0 or wlan.status() >= 3:
+            if sta.status() < 0 or sta.status() >= 3:
                 break
             wait -= 1
             print("---- Waiting for connection...")
             sleep(1)
-        return wlan
+
+
+def wlan_shutdown() -> None:
+    sta.disconnect()
+    ap.disconnect()
+    sta.active(False)
+    ap.active(False)
+
+
+def wlan_mac_address(wlan: WLAN) -> str:
+    mac = wlan.config("mac")
+    return binascii.hexlify(mac).decode("utf-8")
+
+
+def print_wlan_info(wlan: WLAN) -> None:
+    print(f"\n{wlan}")
+    print(f"++++ Connected: {wlan.isconnected()}")
+    print(f"++++ Status: {wlan.status()}")
+    print(f"++++ IP: {wlan.ifconfig()[0]}")
+    print(f"++++ MAC: {wlan_mac_address(wlan)}")
