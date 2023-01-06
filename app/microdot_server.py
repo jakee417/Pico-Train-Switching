@@ -5,6 +5,7 @@ from app.connect import scan
 from app.lib.microdot import Microdot, Request, Response, redirect
 from app.server_methods import (
     StatusMessage,
+    change,
     get,
     load_json,
     remove_json,
@@ -47,6 +48,12 @@ def devices_toggle_index(_: Request, device: str) -> str:
 @led_flash
 def devices_reset_index(_: Request, device: str) -> str:
     return dumps(reset_index(int(device)))
+
+
+@app.get("/devices/change/pins/<pins>/<device_type>")
+@led_flash
+def devices_change(_: Request, pins: str, device_type: str) -> str:
+    return dumps(change(pins, device_type))
 
 
 @app.get("/devices/load/<name>")

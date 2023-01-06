@@ -29,7 +29,7 @@ class BinaryDevice(object):
             Allows the possibility of a None state i.e. uncontrolled.
 
         Args:
-            pin: Unique number for a gpio pin on a raspberry pi.
+            pin: GPIO pin number i.e. GP0 is passed as 0.
                 Alternatively a tuple of integers for multi-pin devices.
             verbose: Either True or False. Verbosity of object.
 

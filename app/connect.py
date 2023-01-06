@@ -13,6 +13,7 @@ sta: WLAN = network.WLAN(network.STA_IF)
 ap: WLAN = network.WLAN(network.AP_IF)
 sta.active(False)
 ap.active(False)
+ap.ifconfig(("192.168.4.1", "255.255.255.0", "192.168.0.1", "1.1.1.1"))
 
 
 class Credential(object):
@@ -145,7 +146,7 @@ def wlan_shutdown() -> None:
 
 def wlan_mac_address(wlan: WLAN) -> str:
     mac = wlan.config("mac")
-    return binascii.hexlify(mac).decode("utf-8")
+    return binascii.hexlify(mac, ":").decode("utf-8")
 
 
 def print_wlan_info(wlan: WLAN) -> None:

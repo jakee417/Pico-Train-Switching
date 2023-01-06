@@ -103,9 +103,7 @@ def toggle_index(device: int) -> dict[str, object]:
     """Toggle the state of a device, or set to "self.on_state" by default."""
     global devices
     global pin_pool
-    device -= 1  # user will see devices as 1-indexed, convert to 0-indexed
-    order = [k for k, _ in devices.items()]  # get ordering of pins
-    pins = order[device]
+    pins = index_to_pins(device)
     on_state: str = devices[str(pins)].on_state
     off_state: str = devices[str(pins)].off_state
     if devices[pins].state == on_state:
@@ -119,9 +117,7 @@ def reset_index(device: int) -> dict[str, object]:
     """Resets the state of a device."""
     global devices
     global pin_pool
-    device -= 1  # user will see devices as 1-indexed, convert to 0-indexed
-    order = [k for k, _ in devices.items()]  # get ordering of pins
-    pins = order[device]
+    pins = index_to_pins(device)
     devices[pins].action(None)  # type: ignore
     return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
 
@@ -169,9 +165,53 @@ def post(pins: str, device_type: str) -> dict[str, object]:
     return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
 
 
+def change(pins: str, device_type: str) -> dict[str, object]:
+    """Change a device type for a set of pins.
+
+    Notes:
+        The current amount of pins must match the new amount of pins.
+    """
+    global devices
+    global pin_pool
+    new_cls = CLS_MAP.get(device_type, None)
+    _pins = convert_csv_tuples(pins)
+
+    # Need the new class and ensure the pins were already being used.
+    if new_cls is not None and str(_pins) in devices:
+        current_device = devices[str(_pins)]
+        current_pin_amount = current_device.required_pins
+
+        # Needs the same amount of pins.
+        if len(_pins) != new_cls.required_pins:
+            raise ValueError(
+                f"Not enough pins for {new_cls}. Found {len(_pins)} expected {new_cls.required_pins}"
+            )
+
+        # New pin amount should match old pin amount.
+        if current_pin_amount != new_cls.required_pins:
+            raise ValueError(
+                f"Pin amounts do not match. Found {new_cls.required_pins} expected {current_pin_amount}."
+            )
+        
+        # Perform the change.
+        current_device.close()
+        devices.update({str(_pins): new_cls(pin=_pins)})
+
+    # pin_pool should remain unchanged since we are swapping device types.
+    return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
+
+
 ######################################################################
 # API Helper Methods
 ######################################################################
+
+
+def index_to_pins(device: int) -> str:
+    global devices
+    device -= 1  # user will see devices as 1-indexed, convert to 0-indexed
+    order = [k for k, _ in devices.items()]  # get ordering of pins
+    pins = order[device]
+    return pins
 
 
 def led_flash(func):

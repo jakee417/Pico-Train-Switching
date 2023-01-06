@@ -18,7 +18,8 @@ if __name__ == "__main__":
     connect()
     # [2] Setup pins
     post("1", "servo")
-    post("2,3", "relay")
+    post("2", "onoff")
+    post("3", "onoff")
     # [3] Start webserver
     try:
         microdot_server.run()
