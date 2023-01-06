@@ -98,24 +98,15 @@ class BinaryDevice(object):
                 - state
                 - name
         """
-        return {
-            "pins": self.pin,
-            "state": self.state,
-            "name": self.name
-        }
+        return {"pins": self.pin, "state": self.state, "name": self.name}
 
-    def log(
-        self,
-        initial_state: str,
-        action: str,
-        update: str
-    ) -> None:
+    def log(self, initial_state: str, action: str, update: str) -> None:
         """Logs update message"""
         print(
-            f"{self}: \n" +
-            f"++++ initial state: {initial_state} \n" +
-            f"++++ action: {action} \n" +
-            f"++++ update: {update}"
+            f"{self}: \n"
+            + f"++++ initial state: {initial_state} \n"
+            + f"++++ action: {action} \n"
+            + f"++++ update: {update}"
         )
 
     # @abstractmethod
@@ -138,8 +129,8 @@ class BinaryDevice(object):
             self.state = action
             update = self._action(action)
             self.log(
-                initial_state=initial_state, 
-                action=action, 
+                initial_state=initial_state,
+                action=action,
                 update=update,
             )
 
@@ -155,6 +146,7 @@ class BinaryDevice(object):
 
 class ServoAngle(object):
     """Angle for a ServoTrainSwitch."""
+
     MIN_ANGLE: int = 0
     MAX_ANGLE: int = 80
 
@@ -216,8 +208,7 @@ class ServoTrainSwitch(BinaryDevice):
             return None  # type: ignore
         else:
             raise ValueError(
-                "Invalid command to train switch." +
-                f"\n Found action: {action}"
+                "Invalid command to train switch." + f"\n Found action: {action}"
             )
         return angle
 
@@ -237,10 +228,7 @@ class RelayTrainSwitch(BinaryDevice):
     off_state: str = "turn"
 
     def __init__(
-        self,
-        active_high: bool = False,
-        initial_value: bool = False,
-        **kwargs
+        self, active_high: bool = False, initial_value: bool = False, **kwargs
     ) -> None:
         """Relay switch wrapping the gpiozero class for remote train switches.
 
@@ -259,14 +247,10 @@ class RelayTrainSwitch(BinaryDevice):
         # when active_high=False, on() seems to pass voltage and off() seems to pass no voltage.
         # We initially set to False.
         self.yg_relay = DigitalOutputDevice(
-            pin=_pins[0],
-            active_high=active_high,
-            initial_value=initial_value
+            pin=_pins[0], active_high=active_high, initial_value=initial_value
         )
         self.br_relay = DigitalOutputDevice(
-            pin=_pins[1],
-            active_high=active_high,
-            initial_value=initial_value
+            pin=_pins[1], active_high=active_high, initial_value=initial_value
         )
 
         print(f"++++ {self} is started...")
@@ -294,8 +278,7 @@ class RelayTrainSwitch(BinaryDevice):
             pass
         else:
             raise ValueError(
-                "Invalid command to train switch." +
-                f"\n Found action: {action}"
+                "Invalid command to train switch." + f"\n Found action: {action}"
             )
         return action
 
@@ -315,7 +298,7 @@ class OnOff(BinaryDevice):
         initial_value: bool = False,
         **kwargs,
     ) -> None:
-        """ OnOff wrapping the picozero class for generic devices.
+        """OnOff wrapping the picozero class for generic devices.
 
         References:
             https://www.electronicshub.org/control-a-relay-using-raspberry-pi/
@@ -329,9 +312,7 @@ class OnOff(BinaryDevice):
         # when active_high=False, on() seems to pass voltage and off() seems to pass no voltage.
         # We initially set to False.
         self.relay = DigitalOutputDevice(
-            pin=self.pin[0],
-            active_high=active_high,
-            initial_value=initial_value
+            pin=self.pin[0], active_high=active_high, initial_value=initial_value
         )
 
         print(f"++++ {self} is started...")
@@ -349,8 +330,7 @@ class OnOff(BinaryDevice):
             pass
         else:
             raise ValueError(
-                "Invalid command to on/off device." +
-                f"\n Found action: {action}"
+                "Invalid command to on/off device." + f"\n Found action: {action}"
             )
         return action
 
@@ -368,15 +348,9 @@ class Disconnect(OnOff):
 
     def safe_close_relay(self, timer: Timer) -> None:
         # If relay is on, turn it off
-        print(
-            f"\n {self}: \n" +
-            f"++++ Background Thread: Checking for shutdown..."
-        )
+        print(f"\n {self}: \n" + f"++++ Background Thread: Checking for shutdown...")
         if self.relay.value == 1:
-            print(
-                f"\n {self}: \n" +
-                f"++++ Background Thread: auto-shutdown"
-            )
+            print(f"\n {self}: \n" + f"++++ Background Thread: auto-shutdown")
             self.relay.off()
             self.state = self.off_state
         else:
@@ -400,8 +374,7 @@ class Disconnect(OnOff):
             )
         else:
             raise ValueError(
-                "Invalid command to Disconnect device." +
-                f"\n Found action: {action}"
+                "Invalid command to Disconnect device." + f"\n Found action: {action}"
             )
         return action
 
@@ -440,10 +413,7 @@ class SpurTrainSwitch(RelayTrainSwitch):
     """Extension of Relay Switch that will optionally depower the track."""
 
     def __init__(self, active_high: bool = False, **kwargs) -> None:
-        super(SpurTrainSwitch, self).__init__(
-            active_high=active_high,
-            **kwargs
-        )
+        super(SpurTrainSwitch, self).__init__(active_high=active_high, **kwargs)
         self.__name__ = "Spur Train Switch"
 
     def _action(self, action: str) -> str:
@@ -458,8 +428,7 @@ class SpurTrainSwitch(RelayTrainSwitch):
             pass
         else:
             raise ValueError(
-                "Invalid command to train switch." +
-                f"\n Found action: {action}"
+                "Invalid command to train switch." + f"\n Found action: {action}"
             )
         return action
 
@@ -468,10 +437,7 @@ class InvertedSpurTrainSwitch(SpurTrainSwitch):
     """Extension of Spur Train Switch but with inverted active_high."""
 
     def __init__(self, **kwargs) -> None:
-        super(InvertedSpurTrainSwitch, self).__init__(
-            active_high=True,
-            **kwargs
-        )
+        super(InvertedSpurTrainSwitch, self).__init__(active_high=True, **kwargs)
         self.__name__ = "Spur(i) Train Switch"
 
 
@@ -479,10 +445,7 @@ class InvertedRelayTrainSwitch(RelayTrainSwitch):
     """Extension of Relay Train Switch but with inverted active_high."""
 
     def __init__(self, **kwargs) -> None:
-        super(InvertedRelayTrainSwitch, self).__init__(
-            active_high=True,
-            **kwargs
-        )
+        super(InvertedRelayTrainSwitch, self).__init__(active_high=True, **kwargs)
         self.__name__ = "Relay(i) Train Switch"
 
 

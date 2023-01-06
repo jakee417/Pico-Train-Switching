@@ -25,8 +25,10 @@ def devices(_: Request) -> str:
 
 
 @app.get("/devices/get")
-def devices_get(_: Request,) -> Response:
-    return redirect('/devices')
+def devices_get(
+    _: Request,
+) -> Response:
+    return redirect("/devices")
 
 
 @app.get("/devices/toggle/pins/<pins>")
@@ -97,8 +99,4 @@ def reset_credentials(_: Request) -> str:
 
 
 def run() -> None:
-    app.run(
-        host="0.0.0.0",
-        port=80,
-        debug=True
-    )
+    app.run(host="0.0.0.0", port=80, debug=True)

@@ -18,18 +18,14 @@ DEFAULT_PATH = PROFILE_PATH + "cfg.json"
 # TODO: Eventually, we want to send both the device type name and the required
 # number of pins. But for now, just give the device type names.
 DEVICE_TYPES: list[str] = list(
-    {
-        k: {
-            "requirement": v.required_pins
-        }
-        for k, v in CLS_MAP.items()
-    }.keys()
+    {k: {"requirement": v.required_pins} for k, v in CLS_MAP.items()}.keys()
 )
 
 
 class StatusMessage(object):
     SUCCESS: str = "success"
     FAILURE: str = "failure"
+
 
 ######################################################################
 # API Methods
@@ -177,16 +173,19 @@ def post(pins: str, device_type: str) -> dict[str, object]:
 # API Helper Methods
 ######################################################################
 
+
 def led_flash(func):
     async def wrapper(*args, **kwargs):
         picozero.pico_led.on()
         await func(*args, **kwargs)
         picozero.pico_led.off()
+
     return wrapper
 
 
 class PinNotInPinPool(Exception):
     """Raised when a pin is accessed that is not available for use."""
+
     pass
 
 
@@ -241,9 +240,7 @@ def devices_to_json(
     # NOTE: Use __iter__ instead of list comprehension to maintain
     # ordering of OrderedDict.
     for pin, d in devices.items():
-        devices_json.update(
-            {str(pin): d.to_json()}
-        )
+        devices_json.update({str(pin): d.to_json()})
     return devices_json
 
 
@@ -258,7 +255,7 @@ def get_all_profiles() -> list[str]:
 def app_return_dict(
     devices: OrderedDict[str, BinaryDevice],
     pin_pool: list[int],
-    device_types: list[str]
+    device_types: list[str],
 ) -> dict[str, object]:
     """Returns a json-returnable dict for an app call."""
     devices_json = devices_to_json(devices)
@@ -266,7 +263,7 @@ def app_return_dict(
         "devices": list(devices_json.values()),
         "pin_pool": pin_pool,
         # "device_types": device_types,
-        "profiles": get_all_profiles()
+        "profiles": get_all_profiles(),
     }
 
 

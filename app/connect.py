@@ -50,9 +50,7 @@ class ScanResult(object):
 
 
 def scan() -> list[dict[str, str]]:
-    return [
-        ScanResult(*s).json for s in sta.scan()
-    ]
+    return [ScanResult(*s).json for s in sta.scan()]
 
 
 def load_credentials() -> dict[str, str]:
@@ -76,11 +74,7 @@ def save_credentials(data: dict[str, str]) -> None:
     Notes:
         See `load_credentials` for schema.
     """
-    if (
-        Credential.SSID in data
-        and Credential.PASSWORD in data
-        and len(data) == 2
-    ):
+    if Credential.SSID in data and Credential.PASSWORD in data and len(data) == 2:
         with open(CREDENTIAL_PATH, "w") as f:
             json.dump(data, f)
         print("---- Credentials saved...")
