@@ -23,5 +23,6 @@ if __name__ == "__main__":
     # [3] Start webserver
     try:
         microdot_server.run()
-    except (OSError, KeyboardInterrupt) as _:
+    except (OSError, KeyboardInterrupt) as e:
+        print(e)
         shutdown()

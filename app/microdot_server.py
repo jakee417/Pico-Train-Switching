@@ -1,7 +1,11 @@
 from json import dumps
 from app.connect import reset_credentials as _reset_credentials
-from app.connect import save_credentials as _save_credentials
-from app.connect import scan
+from app.connect import (
+    save_credentials as _save_credentials,
+    scan,
+    NetworkInfo,
+    nic_closure,
+)
 from app.lib.microdot import Microdot, Request, Response, redirect
 from app.server_methods import (
     StatusMessage,
@@ -80,6 +84,12 @@ def wlan_scan(_: Request) -> str:
     return dumps(scan())
 
 
+@app.get("/network")
+@led_flash
+def network(_: Request) -> str:
+    return dumps(NetworkInfo(nic_closure()).json)
+
+
 @app.post("/credentials")
 @led_flash
 def save_credentials(request: Request) -> str:
@@ -106,4 +116,8 @@ def reset_credentials(_: Request) -> str:
 
 
 def run() -> None:
-    app.run(host="0.0.0.0", port=80, debug=True)
+    app.run(
+        host="0.0.0.0",
+        port=80,
+        debug=True,
+    )

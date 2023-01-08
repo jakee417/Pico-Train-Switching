@@ -12,8 +12,7 @@ GPIO_PINS: set[int] = set(range(29))
 devices: OrderedDict[str, BinaryDevice] = OrderedDict({})
 pin_pool: set[int] = GPIO_PINS.copy()
 
-PROFILE_PATH = "./app/profiles/"
-DEFAULT_PATH = PROFILE_PATH + "cfg.json"
+PROFILE_PATH: str = "./app/profiles/"
 
 # TODO: Eventually, we want to send both the device type name and the required
 # number of pins. But for now, just give the device type names.
@@ -192,7 +191,7 @@ def change(pins: str, device_type: str) -> dict[str, object]:
             raise ValueError(
                 f"Pin amounts do not match. Found {new_cls.required_pins} expected {current_pin_amount}."
             )
-        
+
         # Perform the change.
         current_device.close()
         devices.update({str(_pins): new_cls(pin=_pins)})
