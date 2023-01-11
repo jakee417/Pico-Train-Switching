@@ -1,18 +1,21 @@
+import time
 import network
 from time import sleep
 from network import WLAN
 import binascii
 import json
 
+APP_VERSION = "1.0"
 MAX_WAIT: int = 10
-AP_SSID = "RailYard"
+AP_IP = "192.168.12.1"
+AP_SUBNET = "255.255.255.0"
+AP_GATEWAY = "192.168.12.1"
+AP_DNS = "0.0.0.0"
 AP_PASSWORD = "password"
 CREDENTIAL_PATH = "./app/secrets.json"
 
 sta: WLAN = network.WLAN(network.STA_IF)
 ap: WLAN = network.WLAN(network.AP_IF)
-sta.active(False)
-ap.active(False)
 
 # NIC object that is found at runtime.
 NIC: WLAN
@@ -84,6 +87,7 @@ class NetworkInfo(object):
             "MAC": self.mac,
             "CONNECTED": str(self.connected),
             "STATUS": str(self.status),
+            "VERSION": APP_VERSION,
         }
 
     def __repr__(self):
@@ -171,9 +175,12 @@ def connect() -> None:
 
 
 def connect_as_access_point():
-    print(f"---- Connecting as access point, SSID: {AP_SSID}")
-    ap.config(essid=AP_SSID, password=AP_PASSWORD)
+    print(f"---- Connecting as access point, SSID: {NetworkInfo(ap).hostname}")
+    ap.config(ssid=NetworkInfo(ap).hostname, password=AP_PASSWORD)
     ap.active(True)
+    time.sleep(0.1)
+    # ap.ifconfig((AP_IP, AP_SUBNET, AP_GATEWAY, AP_DNS))
+    time.sleep(0.1)
 
 
 def connect_as_station():
