@@ -1,16 +1,8 @@
-from machine import reset
-
 # Import this to avoid memory allocation failure.
 import app.lib.picozero
-from app.connect import connect, wlan_shutdown
+from app.connect import connect
 import app.microdot_server as microdot_server
-from app.server_methods import close_devices_closure, post
-
-
-def shutdown() -> None:
-    close_devices_closure()
-    wlan_shutdown()
-    reset()
+from app.server_methods import post, shutdown
 
 
 if __name__ == "__main__":

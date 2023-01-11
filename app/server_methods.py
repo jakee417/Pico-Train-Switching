@@ -1,6 +1,8 @@
 import os
 import ujson
+from machine import reset, Timer
 from collections import OrderedDict
+from app.connect import wlan_shutdown
 
 import app.lib.picozero as picozero
 from app.train_switch import CLS_MAP, BinaryDevice
@@ -200,6 +202,15 @@ def change(pins: str, device_type: str) -> dict[str, object]:
     return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
 
 
+def app_reset() -> None:
+    Timer(
+        # period is in milliseconds.
+        period=5 * 1000,
+        mode=Timer.ONE_SHOT,
+        callback=shutdown_closure,
+    )
+
+
 ######################################################################
 # API Helper Methods
 ######################################################################
@@ -317,3 +328,14 @@ def update_pin_pool(devices: OrderedDict[str, BinaryDevice]) -> set[int]:
                 )
             pin_pool.remove(p)
     return pin_pool
+
+
+def shutdown() -> None:
+    """Shutdown all devices, network interfaces, and reset the machine."""
+    close_devices_closure()
+    wlan_shutdown()
+    reset()
+
+
+def shutdown_closure(timer: Timer) -> None:
+    shutdown()

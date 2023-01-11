@@ -1,5 +1,5 @@
 from json import dumps
-from app.connect import reset_credentials as _reset_credentials
+from app.connect import reset_credentials
 from app.connect import (
     save_credentials as _save_credentials,
     scan,
@@ -18,6 +18,7 @@ from app.server_methods import (
     reset_index,
     save_json,
     led_flash,
+    app_reset,
 )
 
 app = Microdot()
@@ -80,19 +81,19 @@ def devices_save_json(_: Request, name: str) -> str:
 
 @app.get("/scan")
 @led_flash
-def wlan_scan(_: Request) -> str:
+def server_scan(_: Request) -> str:
     return dumps(scan())
 
 
 @app.get("/network")
 @led_flash
-def network(_: Request) -> str:
+def server_network(_: Request) -> str:
     return dumps(NetworkInfo(nic_closure()).json)
 
 
 @app.post("/credentials")
 @led_flash
-def save_credentials(request: Request) -> str:
+def server_save_credentials(request: Request) -> str:
     json = request.json
     if json is None:
         print("++++ Credentials were empty...")
@@ -110,8 +111,14 @@ def save_credentials(request: Request) -> str:
 
 
 @app.get("/credentials/reset")
-def reset_credentials(_: Request) -> str:
-    _reset_credentials()
+def server_reset_credentials(_: Request) -> str:
+    reset_credentials()
+    return StatusMessage.SUCCESS
+
+
+@app.get("/reset")
+def server_app_reset(_: Request) -> str:
+    app_reset()
     return StatusMessage.SUCCESS
 
 
