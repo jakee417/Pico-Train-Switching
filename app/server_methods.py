@@ -22,6 +22,8 @@ DEVICE_TYPES: list[str] = list(
     {k: {"requirement": v.required_pins} for k, v in CLS_MAP.items()}.keys()
 )
 
+APP_RESET_WAIT_TIME: int = 5
+
 
 class StatusMessage(object):
     SUCCESS: str = "success"
@@ -203,9 +205,9 @@ def change(pins: str, device_type: str) -> dict[str, object]:
 
 
 def app_reset() -> None:
+    print(f"++++ Starting Shutdown Timer in {APP_RESET_WAIT_TIME}(s)...")
     Timer(
-        # period is in milliseconds.
-        period=5 * 1000,
+        period=APP_RESET_WAIT_TIME * 1000,
         mode=Timer.ONE_SHOT,
         callback=shutdown_closure,
     )
@@ -332,6 +334,7 @@ def update_pin_pool(devices: OrderedDict[str, BinaryDevice]) -> set[int]:
 
 def shutdown() -> None:
     """Shutdown all devices, network interfaces, and reset the machine."""
+    print("++++ Shutting down devices, wlan, and machine...")
     close_devices_closure()
     wlan_shutdown()
     reset()

@@ -7,9 +7,9 @@ import json
 
 APP_VERSION = "1.0"
 MAX_WAIT: int = 10
-AP_IP = "192.168.12.1"
+AP_IP = "192.168.4.1"
 AP_SUBNET = "255.255.255.0"
-AP_GATEWAY = "192.168.12.1"
+AP_GATEWAY = "192.168.4.1"
 AP_DNS = "0.0.0.0"
 AP_PASSWORD = "password"
 CREDENTIAL_PATH = "./app/secrets.json"
@@ -65,9 +65,9 @@ class NetworkInfo(object):
     def __init__(
         self,
         wlan: WLAN,
-    ):
+    ) -> None:
         self.wlan = wlan
-        self.ip = wlan.ifconfig()[0]
+        (self.ip, self.subnet_mask, self.gateway, self.dns) = wlan.ifconfig()
         self.mac = self.wlan_mac_address(wlan)
         # TODO: Replace this with a dynamic value based off serial.
         self.hostname: str = "pybd"
@@ -90,13 +90,16 @@ class NetworkInfo(object):
             "VERSION": APP_VERSION,
         }
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"""\n
         {self.wlan}
         ++++ Connected: {self.connected}
         ++++ Status: {self.status}
         ++++ HOSTNAME: {self.hostname}
         ++++ IP: {self.ip}
+        ++++ SUBNET: {self.subnet_mask}
+        ++++ GATEWAY: {self.gateway}
+        ++++ DNS: {self.dns}
         ++++ MAC: {self.mac}\n
         """
 
@@ -174,16 +177,17 @@ def connect() -> None:
     print(NetworkInfo(sta))
 
 
-def connect_as_access_point():
+def connect_as_access_point() -> None:
     print(f"---- Connecting as access point, SSID: {NetworkInfo(ap).hostname}")
     ap.config(ssid=NetworkInfo(ap).hostname, password=AP_PASSWORD)
     ap.active(True)
     time.sleep(0.1)
+    # TODO: Find sensible defaults that the client can hardcode as a static ip.
     # ap.ifconfig((AP_IP, AP_SUBNET, AP_GATEWAY, AP_DNS))
     time.sleep(0.1)
 
 
-def connect_as_station():
+def connect_as_station() -> None:
     print("---- Connecting as client...")
     sta.active(True)
 
