@@ -266,7 +266,8 @@ def construct_from_cfg(
         devices.update({_k: _v})
     # Set states from configuration
     for k, v in devices.items():
-        v.action(str(cfg[str(k)]["state"]))
+        # NOTE: Actually passes an Optional[str]
+        v.action(cfg[str(k)]["state"])  # type: ignore
     return devices
 
 

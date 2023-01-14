@@ -55,7 +55,7 @@ def devices_reset_index(_: Request, device: str) -> str:
     return dumps(reset_index(int(device)))
 
 
-@app.get("/devices/change/pins/<pins>/<device_type>")
+@app.get("/devices/change/<pins>/<device_type>")
 @led_flash
 def devices_change(_: Request, pins: str, device_type: str) -> str:
     return dumps(change(pins, device_type))
