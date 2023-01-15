@@ -2,11 +2,11 @@
 import time
 from machine import Timer
 
-from app.lib.picozero import DigitalOutputDevice
+from app.lib.picozero import DigitalOutputDevice, Servo
 from app.lib.picozero_extensions import AngularServo
 
 
-SLEEP: float = 0.5  # default sleep time to prevent jitter - half seconds
+SLEEP: float = 1.0  # default sleep time to prevent jitter - half seconds
 BLINK: float = 0.25  # default time to wait between blinking
 SAFE_SHUTDOWN: int = 4  # how long to wait before shutting down disconnect
 
@@ -185,11 +185,24 @@ class ServoTrainSwitch(BinaryDevice):
         self.max_angle = max_angle
         self.initial_angle = initial_angle
 
+        # Supporting math:
+        # params for SG90 micro servo:
+        # 50Hz normal operation
+        # 2% duty cycle = 0°
+        # 12% duty cycle = 12°
+        # => frame_width (s) = 1 / 50 (Hz) = 0.02 (s)
+        # _min_dc = min_pulse_width / frame_width = 0.02%
+        # => min_pulse = 4 / 10,000
+        # _dc_range = (max_pulse_width - min_pulse_width) / frame_width = 0.12%
+        # => max_pulse_width = 24 / 10,000
         self.servo = AngularServo(
             pin=self.pin_name,
             initial_angle=self.initial_angle,
             min_angle=self.min_angle,
             max_angle=self.max_angle,
+            frame_width=1 / 50,  # 1/50Hz corresponds to 20/1000s default
+            min_pulse_width=4 / 10000,  # corresponds to 2% duty cycle
+            max_pulse_width=24 / 10000,  # correponds to 12% duty cycle
         )
 
         print(f"++++ {self} is started...")
@@ -216,7 +229,67 @@ class ServoTrainSwitch(BinaryDevice):
         # Optional[float]
         angle = self.action_to_angle(action)
         self.servo.angle = angle
+        print(f"++++ sleeping {SLEEP}(s)...")
+        time.sleep(SLEEP)
         return str(angle)
+
+    def __del__(self) -> None:
+        self.servo.close()
+
+
+class ServoTrainSwitch2(BinaryDevice):
+    required_pins = 1
+    on_state = "straight"
+    off_state = "turn"
+
+    def __init__(self, **kwargs) -> None:
+        """Servo class wrapping the gpiozero class for manual train switches.
+
+        Args:
+            initial_angle: intial angle of the servo
+            min_angle: minimum angle of the angular servo
+            max_angle: maximum angle of the angular servo
+
+        References:
+            https://gpiozero.readthedocs.io/en/stable/api_output.html#angularservo
+            https://gpiozero.readthedocs.io/en/stable/recipes.html#servo
+        """
+        super(ServoTrainSwitch2, self).__init__(**kwargs)
+
+        self.__name__ = "Servo Train Switch"
+        if len(self.pin) != self.get_required_pins:
+            raise ValueError(f"Expecting one pin. Found {self.pin}")
+        self.pin_name = self.pin[0]
+
+        # Supporting math:
+        # params for SG90 micro servo:
+        # 50Hz normal operation
+        # 2% duty cycle = 0°
+        # 12% duty cycle = 12°
+        # => frame_width (s) = 1 / 50 (Hz) = 0.02 (s)
+        # _min_dc = min_pulse_width / frame_width = 0.02%
+        # => min_pulse = 4 / 10,000
+        # _dc_range = (max_pulse_width - min_pulse_width) / frame_width = 0.12%
+        # => max_pulse_width = 24 / 10,000
+        self.servo = Servo(
+            pin=self.pin_name,
+            frame_width=1 / 50,  # 1/50Hz corresponds to 20/1000s default
+            min_pulse_width=4 / 10000,  # corresponds to 2% duty cycle
+            max_pulse_width=24 / 10000,  # correponds to 12% duty cycle
+        )
+        print(f"++++ {self} is started...")
+
+    def custom_state_setter(self, state: str) -> None:
+        pass
+
+    def _action(self, action: str) -> str:
+        if action == ServoTrainSwitch.off_state:
+            self.servo.min()
+        elif action == ServoTrainSwitch.on_state:
+            self.servo.max()
+        elif action is None:
+            self.servo.off()
+        return action
 
     def __del__(self) -> None:
         self.servo.close()
