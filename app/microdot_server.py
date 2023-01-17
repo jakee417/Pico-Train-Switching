@@ -13,6 +13,7 @@ from app.server_methods import (
     get,
     load_json,
     remove_json,
+    reset_pins,
     toggle_pins,
     toggle_index,
     reset_index,
@@ -30,17 +31,16 @@ def devices(_: Request) -> str:
     return dumps(get())
 
 
-@app.get("/devices/get")
-def devices_get(
-    _: Request,
-) -> Response:
-    return redirect("/devices")
-
-
 @app.get("/devices/toggle/pins/<pins>")
 @led_flash
 def devices_toggle_pins(_: Request, pins: str) -> str:
     return dumps(toggle_pins(pins))
+
+
+@app.get("/devices/reset/pins/<pins>")
+@led_flash
+def devices_reset_pins(_: Request, pins: str) -> str:
+    return dumps(reset_pins(pins))
 
 
 @app.get("/devices/toggle/<device>")

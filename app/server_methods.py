@@ -42,24 +42,85 @@ def get() -> dict[str, object]:
     return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
 
 
-def save_json(name: str) -> dict[str, object]:
-    """Saves a JSON profile."""
+def toggle_pins(pins: str) -> dict[str, object]:
+    """Toggle the state of a device, or set to "self.on_state" by default."""
     global devices
     global pin_pool
-    path: str = PROFILE_PATH + name.strip() + ".json"
-    devices_json = devices_to_json(devices)
-    order: list[str] = []
+    _pins = convert_csv_tuples(pins)
+    on_state = devices[str(_pins)].on_state
+    off_state = devices[str(_pins)].off_state
+    if devices[str(_pins)].state == on_state:
+        devices[str(_pins)].action(off_state)
+    else:
+        devices[str(_pins)].action(on_state)
+    return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
 
-    # NOTE: Explicitly save the order of the keys since ujson
-    # does not maintain order when decoding.
-    for k in devices_json.keys():
-        order += [k]
 
-    devices_json["order"] = order  # type: ignore
+def reset_pins(pins: str) -> dict[str, object]:
+    """Resets the state of a device at a given set of pins."""
+    global devices
+    global pin_pool
+    _pins = convert_csv_tuples(pins)
+    devices[str(_pins)].action(None)  # type: ignore
+    return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
 
-    with open(path, "w") as f:
-        ujson.dump(devices_json, f)
-    print(f"++++ saved devices: {devices_json} as {path}")
+
+def toggle_index(device: int) -> dict[str, object]:
+    """Toggle the state of a device, or set to "self.on_state" by default."""
+    global devices
+    global pin_pool
+    pins = index_to_pins(device)
+    on_state: str = devices[str(pins)].on_state
+    off_state: str = devices[str(pins)].off_state
+    if devices[pins].state == on_state:
+        devices[str(pins)].action(off_state)
+    else:
+        devices[str(pins)].action(on_state)
+    return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
+
+
+def reset_index(device: int) -> dict[str, object]:
+    """Resets the state of a device."""
+    global devices
+    global pin_pool
+    pins = index_to_pins(device)
+    devices[pins].action(None)  # type: ignore
+    return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
+
+
+def change(pins: str, device_type: str) -> dict[str, object]:
+    """Change a device type for a set of pins.
+
+    Notes:
+        The current amount of pins must match the new amount of pins.
+    """
+    global devices
+    global pin_pool
+    new_cls = CLS_MAP.get(device_type, None)
+    _pins = convert_csv_tuples(pins)
+
+    # Need the new class and ensure the pins were already being used.
+    if new_cls is not None and str(_pins) in devices:
+        current_device = devices[str(_pins)]
+        current_pin_amount = current_device.required_pins
+
+        # Needs the same amount of pins.
+        if len(_pins) != new_cls.required_pins:
+            raise ValueError(
+                f"Not enough pins for {new_cls}. Found {len(_pins)} expected {new_cls.required_pins}"
+            )
+
+        # New pin amount should match old pin amount.
+        if current_pin_amount != new_cls.required_pins:
+            raise ValueError(
+                f"Pin amounts do not match. Found {new_cls.required_pins} expected {current_pin_amount}."
+            )
+
+        # Perform the change.
+        current_device.close()
+        devices.update({str(_pins): new_cls(pin=_pins)})
+
+    # pin_pool should remain unchanged since we are swapping device types.
     return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
 
 
@@ -102,40 +163,24 @@ def remove_json(name: str) -> dict[str, object]:
     return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
 
 
-def toggle_index(device: int) -> dict[str, object]:
-    """Toggle the state of a device, or set to "self.on_state" by default."""
+def save_json(name: str) -> dict[str, object]:
+    """Saves a JSON profile."""
     global devices
     global pin_pool
-    pins = index_to_pins(device)
-    on_state: str = devices[str(pins)].on_state
-    off_state: str = devices[str(pins)].off_state
-    if devices[pins].state == on_state:
-        devices[str(pins)].action(off_state)
-    else:
-        devices[str(pins)].action(on_state)
-    return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
+    path: str = PROFILE_PATH + name.strip() + ".json"
+    devices_json = devices_to_json(devices)
+    order: list[str] = []
 
+    # NOTE: Explicitly save the order of the keys since ujson
+    # does not maintain order when decoding.
+    for k in devices_json.keys():
+        order += [k]
 
-def reset_index(device: int) -> dict[str, object]:
-    """Resets the state of a device."""
-    global devices
-    global pin_pool
-    pins = index_to_pins(device)
-    devices[pins].action(None)  # type: ignore
-    return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
+    devices_json["order"] = order  # type: ignore
 
-
-def toggle_pins(pins: str) -> dict[str, object]:
-    """Toggle the state of a device, or set to "self.on_state" by default."""
-    global devices
-    global pin_pool
-    _pins = convert_csv_tuples(pins)
-    on_state = devices[str(_pins)].on_state
-    off_state = devices[str(_pins)].off_state
-    if devices[str(_pins)].state == on_state:
-        devices[str(_pins)].action(off_state)
-    else:
-        devices[str(_pins)].action(on_state)
+    with open(path, "w") as f:
+        ujson.dump(devices_json, f)
+    print(f"++++ saved devices: {devices_json} as {path}")
     return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
 
 
@@ -165,42 +210,6 @@ def post(pins: str, device_type: str) -> dict[str, object]:
             added = device_cls(pin=_pins)
             devices.update({str(_pins): added})  # add to global container
             [pin_pool.remove(p) for p in added.pin_list]  # remove availability
-    return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
-
-
-def change(pins: str, device_type: str) -> dict[str, object]:
-    """Change a device type for a set of pins.
-
-    Notes:
-        The current amount of pins must match the new amount of pins.
-    """
-    global devices
-    global pin_pool
-    new_cls = CLS_MAP.get(device_type, None)
-    _pins = convert_csv_tuples(pins)
-
-    # Need the new class and ensure the pins were already being used.
-    if new_cls is not None and str(_pins) in devices:
-        current_device = devices[str(_pins)]
-        current_pin_amount = current_device.required_pins
-
-        # Needs the same amount of pins.
-        if len(_pins) != new_cls.required_pins:
-            raise ValueError(
-                f"Not enough pins for {new_cls}. Found {len(_pins)} expected {new_cls.required_pins}"
-            )
-
-        # New pin amount should match old pin amount.
-        if current_pin_amount != new_cls.required_pins:
-            raise ValueError(
-                f"Pin amounts do not match. Found {new_cls.required_pins} expected {current_pin_amount}."
-            )
-
-        # Perform the change.
-        current_device.close()
-        devices.update({str(_pins): new_cls(pin=_pins)})
-
-    # pin_pool should remain unchanged since we are swapping device types.
     return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
 
 
@@ -285,6 +294,21 @@ def sort_pool(pool: set[int]) -> list[int]:
     return l
 
 
+def app_return_dict(
+    devices: OrderedDict[str, BinaryDevice],
+    pin_pool: list[int],
+    device_types: list[str],
+) -> dict[str, object]:
+    """Returns a json-returnable dict for an app call."""
+    devices_json = devices_to_json(devices)
+    return {
+        "devices": list(devices_json.values()),
+        "pin_pool": pin_pool,
+        # "device_types": device_types,
+        "profiles": get_all_profiles(),
+    }
+
+
 def devices_to_json(
     devices: OrderedDict[str, BinaryDevice]
 ) -> OrderedDict[str, dict[str, object]]:
@@ -303,21 +327,6 @@ def get_all_profiles() -> list[str]:
     profiles = [i.split(".")[0] for i in profiles]
     profiles.sort()
     return profiles
-
-
-def app_return_dict(
-    devices: OrderedDict[str, BinaryDevice],
-    pin_pool: list[int],
-    device_types: list[str],
-) -> dict[str, object]:
-    """Returns a json-returnable dict for an app call."""
-    devices_json = devices_to_json(devices)
-    return {
-        "devices": list(devices_json.values()),
-        "pin_pool": pin_pool,
-        # "device_types": device_types,
-        "profiles": get_all_profiles(),
-    }
 
 
 def update_pin_pool(devices: OrderedDict[str, BinaryDevice]) -> set[int]:
