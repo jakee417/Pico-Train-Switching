@@ -1,3 +1,4 @@
+import os
 import time
 import network
 from time import sleep
@@ -12,7 +13,11 @@ AP_SUBNET = "255.255.255.0"
 AP_GATEWAY = "192.168.4.1"
 AP_DNS = "0.0.0.0"
 AP_PASSWORD = "password"
-CREDENTIAL_PATH = "./app/secrets.json"
+
+CREDENTIAL_FOLDER = "secrets"
+CREDENTIAL_PATH = f"./{CREDENTIAL_FOLDER}/secrets.json"
+if CREDENTIAL_FOLDER not in os.listdir():
+    os.mkdir(CREDENTIAL_FOLDER)
 
 sta: WLAN = network.WLAN(network.STA_IF)
 ap: WLAN = network.WLAN(network.AP_IF)

@@ -14,7 +14,10 @@ GPIO_PINS: set[int] = set(range(29))
 devices: OrderedDict[str, BinaryDevice] = OrderedDict({})
 pin_pool: set[int] = GPIO_PINS.copy()
 
-PROFILE_PATH: str = "./app/profiles/"
+PROFILE_FOLDER = "profiles"
+PROFILE_PATH: str = f"./{PROFILE_FOLDER}/"
+if PROFILE_FOLDER not in os.listdir():
+    os.mkdir(PROFILE_FOLDER)
 
 # TODO: Eventually, we want to send both the device type name and the required
 # number of pins. But for now, just give the device type names.
