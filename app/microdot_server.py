@@ -111,12 +111,14 @@ def server_save_credentials(request: Request) -> str:
 
 
 @app.get("/credentials/reset")
+@led_flash
 def server_reset_credentials(_: Request) -> str:
     reset_credentials()
     return StatusMessage.SUCCESS
 
 
 @app.get("/reset")
+@led_flash
 def server_app_reset(_: Request) -> str:
     app_reset()
     return StatusMessage.SUCCESS
