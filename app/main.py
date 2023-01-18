@@ -9,8 +9,7 @@ if __name__ == "__main__":
     # [1] Connect to wifi network
     connect()
     # [2] Setup pins
-    post("1", "servo")
-    for i in range(2, 28, 2):
+    for i in range(1, 28, 2):
         post(str(i) + "," + str(i+1), "relay")
     # [3] Start webserver
     try:
