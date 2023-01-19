@@ -5,8 +5,6 @@ from time import sleep
 from network import WLAN
 import binascii
 import json
-import app.lib.logging as logging
-from app.lib.logging import Logger
 
 APP_VERSION = "1.0"
 MAX_WAIT: int = 10
@@ -26,26 +24,6 @@ ap: WLAN = network.WLAN(network.AP_IF)
 
 # NIC object that is found at runtime.
 NIC: WLAN
-
-logger = logging.getLogger()
-
-
-def setup_logging() -> Logger:
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger()
-    # Setup stream handler to log info
-    stream_handler = logging.StreamHandler()
-    stream_handler.setLevel(logging.INFO)
-    file_handler = logging.FileHandler("error.log", mode="w")
-    file_handler.setLevel(logging.WARNING)
-    formatter = logging.Formatter(
-        "%(asctime)s.%(msecs)03d - %(name)s - %(levelname)s - %(message)s"
-    )
-    stream_handler.setFormatter(formatter)
-    file_handler.setFormatter(formatter)
-    logger.addHandler(stream_handler)
-    logger.addHandler(file_handler)
-    return logger
 
 
 def nic_closure() -> WLAN:
@@ -155,7 +133,7 @@ def load_credentials() -> dict[str, str]:
         with open(CREDENTIAL_PATH, "r") as f:
             json_str: str = f.read()
     except OSError as e:
-        logger.error(f"++++ Found {e}, creating new credentials...")
+        print(f"++++ Found {e}, creating new credentials...")
         _save_credentials({})
     return json.loads(json_str)
 
@@ -168,16 +146,16 @@ def save_credentials(data: dict[str, str]) -> None:
     """
     if Credential.SSID in data and Credential.PASSWORD in data and len(data) == 2:
         _save_credentials(data)
-        logger.info("---- Credentials saved...")
+        print("---- Credentials saved...")
     else:
-        logger.error("---- Unable to save credentials...")
+        print("---- Unable to save credentials...")
         raise KeyError
 
 
 def reset_credentials() -> None:
     with open(CREDENTIAL_PATH, "w") as f:
         json.dump({}, f)
-    logger.info("---- Credentials reset...")
+    print("---- Credentials reset...")
 
 
 def connect() -> None:
@@ -190,7 +168,7 @@ def connect() -> None:
     connect_as_station()
 
     if sta.status() != 3:
-        logger.info("---- Could not connect as client...")
+        print("---- Could not connect as client...")
         sta.disconnect()
         sta.active(False)
         connect_as_access_point()
@@ -200,12 +178,12 @@ def connect() -> None:
         ap.active(False)
         NIC = sta
 
-    logger.info(NetworkInfo(ap))
-    logger.info(NetworkInfo(sta))
+    print(NetworkInfo(ap))
+    print(NetworkInfo(sta))
 
 
 def connect_as_access_point() -> None:
-    logger.info(f"---- Connecting as access point, SSID: {NetworkInfo(ap).hostname}")
+    print(f"---- Connecting as access point, SSID: {NetworkInfo(ap).hostname}")
     ap.config(ssid=NetworkInfo(ap).hostname, password=AP_PASSWORD)
     ap.active(True)
     time.sleep(0.1)
@@ -215,7 +193,7 @@ def connect_as_access_point() -> None:
 
 
 def connect_as_station() -> None:
-    logger.info("---- Connecting as client...")
+    print("---- Connecting as client...")
     sta.active(True)
 
     # Load the cached ssid/password.
@@ -230,7 +208,7 @@ def connect_as_station() -> None:
             if sta.status() < 0 or sta.status() >= 3:
                 break
             wait -= 1
-            logger.info("---- Waiting for connection...")
+            print("---- Waiting for connection...")
             sleep(1)
 
 

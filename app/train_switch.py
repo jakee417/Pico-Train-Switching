@@ -4,9 +4,6 @@ from machine import Timer
 
 from app.lib.picozero import DigitalOutputDevice, Servo
 from app.lib.picozero_extensions import AngularServo
-import app.lib.logging as logging
-
-logger = logging.getLogger()
 
 
 SLEEP: float = 1.0  # default sleep time to prevent jitter - half seconds
@@ -105,7 +102,7 @@ class BinaryDevice(object):
 
     def log(self, initial_state: str, action: str, update: str) -> None:
         """Logs update message"""
-        logger.info(
+        print(
             f"{self}: \n"
             + f"++++ initial state: {initial_state} \n"
             + f"++++ action: {action} \n"
@@ -144,7 +141,7 @@ class BinaryDevice(object):
     def close(self) -> None:
         """Close a connection with a switch."""
         self.__del__()
-        logger.info(f"++++ {self} is closed...")
+        print(f"++++ {self} is closed...")
 
 
 class ServoAngle(object):
@@ -208,7 +205,7 @@ class ServoTrainSwitch(BinaryDevice):
             max_pulse_width=24 / 10000,  # correponds to 12% duty cycle
         )
 
-        logger.info(f"++++ {self} is started...")
+        print(f"++++ {self} is started...")
 
     def custom_state_setter(self, state: str) -> None:
         pass
@@ -232,7 +229,7 @@ class ServoTrainSwitch(BinaryDevice):
         # Optional[float]
         angle = self.action_to_angle(action)
         self.servo.angle = angle
-        logger.info(f"++++ sleeping {SLEEP}(s)...")
+        print(f"++++ sleeping {SLEEP}(s)...")
         time.sleep(SLEEP)
         return str(angle)
 
@@ -280,7 +277,7 @@ class ServoTrainSwitch2(BinaryDevice):
             min_pulse_width=4 / 10000,  # corresponds to 2% duty cycle
             max_pulse_width=24 / 10000,  # correponds to 12% duty cycle
         )
-        logger.info(f"++++ {self} is started...")
+        print(f"++++ {self} is started...")
 
     def custom_state_setter(self, state: str) -> None:
         pass
@@ -329,7 +326,7 @@ class RelayTrainSwitch(BinaryDevice):
             pin=_pins[1], active_high=active_high, initial_value=initial_value
         )
 
-        logger.info(f"++++ {self} is started...")
+        print(f"++++ {self} is started...")
 
     def custom_state_setter(self, state: str) -> None:
         if state is None:
@@ -391,7 +388,7 @@ class OnOff(BinaryDevice):
             pin=self.pin[0], active_high=active_high, initial_value=initial_value
         )
 
-        logger.info(f"++++ {self} is started...")
+        print(f"++++ {self} is started...")
 
     def custom_state_setter(self, state: str) -> None:
         if not state:
@@ -424,15 +421,13 @@ class Disconnect(OnOff):
 
     def safe_close_relay(self, timer: Timer) -> None:
         # If relay is on, turn it off
-        logger.info(
-            f"\n {self}: \n" + f"++++ Background Thread: Checking for shutdown..."
-        )
+        print(f"\n {self}: \n" + f"++++ Background Thread: Checking for shutdown...")
         if self.relay.value == 1:
-            logger.info(f"\n {self}: \n" + f"++++ Background Thread: auto-shutdown")
+            print(f"\n {self}: \n" + f"++++ Background Thread: auto-shutdown")
             self.relay.off()
             self.state = self.off_state
         else:
-            logger.info(f"\n {self}: \n ++++ Background Thread: no action needed!")
+            print(f"\n {self}: \n ++++ Background Thread: no action needed!")
 
     def _action(self, action: str) -> str:
         if action is None or action == Disconnect.off_state:
