@@ -6,6 +6,7 @@ from app.connect import wlan_shutdown
 
 import app.lib.picozero as picozero
 from app.train_switch import CLS_MAP, BinaryDevice
+import app.lib.logging as logging
 
 # Raspberry Pi Pico W RP2040 layout
 GPIO_PINS: set[int] = set(range(29))
@@ -26,6 +27,9 @@ DEVICE_TYPES: list[str] = list(
 )
 
 APP_RESET_WAIT_TIME: int = 5
+
+
+logger = logging.getLogger()
 
 
 class StatusMessage(object):
@@ -134,10 +138,10 @@ def load_json(name: str) -> dict[str, object]:
     path: str = PROFILE_PATH + name + ".json"
 
     # Load a json string from a file stream.
-    print(f"++++ JSON path: {path}")
+    logging.info(f"++++ JSON path: {path}")
     with open(path, "r") as f:
         json_str: str = f.read()
-        print(f"++++ Loading JSON: {json_str}")
+        logging.info(f"++++ Loading JSON: {json_str}")
 
     # Load the config as an unordered dictionary.
     _cfg: dict[str, dict[str, object]] = ujson.loads(json_str)
@@ -151,7 +155,7 @@ def load_json(name: str) -> dict[str, object]:
     # Update the global devices.
     close_devices(devices)  # close out old devices
     devices = construct_from_cfg(cfg)  # start new devices
-    print(f"++++ loaded devices: {devices}")
+    logging.info(f"++++ loaded devices: {devices}")
     pin_pool = update_pin_pool(devices)
     return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
 
@@ -162,7 +166,7 @@ def remove_json(name: str) -> dict[str, object]:
     global pin_pool
     path = PROFILE_PATH + name + ".json"
     os.remove(path)
-    print(f"++++ Removed file: {path}")
+    logging.info(f"++++ Removed file: {path}")
     return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
 
 
@@ -183,7 +187,7 @@ def save_json(name: str) -> dict[str, object]:
 
     with open(path, "w") as f:
         ujson.dump(devices_json, f)
-    print(f"++++ saved devices: {devices_json} as {path}")
+    logging.info(f"++++ saved devices: {devices_json} as {path}")
     return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
 
 
@@ -217,7 +221,7 @@ def post(pins: str, device_type: str) -> dict[str, object]:
 
 
 def app_reset() -> None:
-    print(f"++++ Starting Shutdown Timer in {APP_RESET_WAIT_TIME}(s)...")
+    logging.info(f"++++ Starting Shutdown Timer in {APP_RESET_WAIT_TIME}(s)...")
     Timer(
         period=APP_RESET_WAIT_TIME * 1000,
         mode=Timer.ONE_SHOT,
@@ -243,6 +247,16 @@ def led_flash(func):
         picozero.pico_led.on()
         await func(*args, **kwargs)
         picozero.pico_led.off()
+
+    return wrapper
+
+
+def server_log(func):
+    def wrapper(*args, **kwargs):
+        try:
+            func(*args, **kwargs)
+        except Exception as e:
+            logger.error(e)
 
     return wrapper
 
@@ -347,7 +361,7 @@ def update_pin_pool(devices: OrderedDict[str, BinaryDevice]) -> set[int]:
 
 def shutdown() -> None:
     """Shutdown all devices, network interfaces, and reset the machine."""
-    print("++++ Shutting down devices, wlan, and machine...")
+    logging.info("++++ Shutting down devices, wlan, and machine...")
     close_devices_closure()
     wlan_shutdown()
     reset()
