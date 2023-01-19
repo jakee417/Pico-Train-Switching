@@ -1,3 +1,4 @@
+import time
 from json import dumps
 from app.connect import reset_credentials
 from app.connect import (
@@ -6,12 +7,14 @@ from app.connect import (
     NetworkInfo,
     nic_closure,
 )
-from app.lib.microdot import Microdot, Request, Response, redirect
+from app.lib.microdot import Microdot, Request
+from app.logging import log_dump, log_flush
 from app.server_methods import (
     StatusMessage,
     change,
     get,
     load_json,
+    log_record,
     remove_json,
     reset_pins,
     toggle_pins,
@@ -124,9 +127,23 @@ def server_app_reset(_: Request) -> str:
     return StatusMessage.SUCCESS
 
 
+@app.get("/log")
+@led_flash
+def server_log(_: Request):
+    return log_dump()
+
+
+@app.get("/log/flush")
+@led_flash
+def server_log_flush(_: Request):
+    log_flush()
+    return StatusMessage.SUCCESS
+
+
+@app.before_request
+def server_log_request(request: Request):
+    log_record(request.url)
+
+
 def run() -> None:
-    app.run(
-        host="0.0.0.0",
-        port=80,
-        debug=True,
-    )
+    app.run(host="0.0.0.0", port=80)

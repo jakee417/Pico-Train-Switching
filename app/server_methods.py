@@ -5,6 +5,7 @@ from collections import OrderedDict
 from app.connect import wlan_shutdown
 
 import app.lib.picozero as picozero
+from app.logging import log_record
 from app.train_switch import CLS_MAP, BinaryDevice
 
 # Raspberry Pi Pico W RP2040 layout
@@ -134,10 +135,10 @@ def load_json(name: str) -> dict[str, object]:
     path: str = PROFILE_PATH + name + ".json"
 
     # Load a json string from a file stream.
-    print(f"++++ JSON path: {path}")
+    log_record(f"JSON path: {path}")
     with open(path, "r") as f:
         json_str: str = f.read()
-        print(f"++++ Loading JSON: {json_str}")
+        log_record(f"Loading JSON: {json_str}")
 
     # Load the config as an unordered dictionary.
     _cfg: dict[str, dict[str, object]] = ujson.loads(json_str)
@@ -151,7 +152,6 @@ def load_json(name: str) -> dict[str, object]:
     # Update the global devices.
     close_devices(devices)  # close out old devices
     devices = construct_from_cfg(cfg)  # start new devices
-    print(f"++++ loaded devices: {devices}")
     pin_pool = update_pin_pool(devices)
     return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
 
@@ -162,7 +162,7 @@ def remove_json(name: str) -> dict[str, object]:
     global pin_pool
     path = PROFILE_PATH + name + ".json"
     os.remove(path)
-    print(f"++++ Removed file: {path}")
+    log_record(f"Removed file: {path}")
     return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
 
 
@@ -183,7 +183,7 @@ def save_json(name: str) -> dict[str, object]:
 
     with open(path, "w") as f:
         ujson.dump(devices_json, f)
-    print(f"++++ saved devices: {devices_json} as {path}")
+    log_record(f"Saved devices: {devices_json} as {path}")
     return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
 
 
@@ -211,13 +211,14 @@ def post(pins: str, device_type: str) -> dict[str, object]:
         # pins must be available and not the same
         if all([p in pin_pool for p in _pins]) and len(set(_pins)) == len(_pins):
             added = device_cls(pin=_pins)
+            log_record(f"{added} is started...")
             devices.update({str(_pins): added})  # add to global container
             [pin_pool.remove(p) for p in added.pin_list]  # remove availability
     return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
 
 
 def app_reset() -> None:
-    print(f"++++ Starting Shutdown Timer in {APP_RESET_WAIT_TIME}(s)...")
+    log_record(f"Starting Shutdown Timer in {APP_RESET_WAIT_TIME}(s)...")
     Timer(
         period=APP_RESET_WAIT_TIME * 1000,
         mode=Timer.ONE_SHOT,
@@ -257,6 +258,7 @@ def close_devices(devices: OrderedDict[str, BinaryDevice]) -> None:
     """Close all connections in a dictionary of devices."""
     # close all pre existing connections
     for _, device in devices.items():
+        log_record(f"{device} is closed...")
         device.close()
     del devices  # garbage collect
 
@@ -347,7 +349,7 @@ def update_pin_pool(devices: OrderedDict[str, BinaryDevice]) -> set[int]:
 
 def shutdown() -> None:
     """Shutdown all devices, network interfaces, and reset the machine."""
-    print("++++ Shutting down devices, wlan, and machine...")
+    log_record(f"Shutting down devices, wlan, and machine...")
     close_devices_closure()
     wlan_shutdown()
     reset()

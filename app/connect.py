@@ -6,6 +6,8 @@ from network import WLAN
 import binascii
 import json
 
+from app.logging import log_record
+
 APP_VERSION = "1.0"
 MAX_WAIT: int = 10
 AP_IP = "192.168.4.1"
@@ -133,7 +135,7 @@ def load_credentials() -> dict[str, str]:
         with open(CREDENTIAL_PATH, "r") as f:
             json_str: str = f.read()
     except OSError as e:
-        print(f"++++ Found {e}, creating new credentials...")
+        log_record(f"Found {e}, creating new credentials...")
         _save_credentials({})
     return json.loads(json_str)
 
@@ -146,16 +148,16 @@ def save_credentials(data: dict[str, str]) -> None:
     """
     if Credential.SSID in data and Credential.PASSWORD in data and len(data) == 2:
         _save_credentials(data)
-        print("---- Credentials saved...")
+        log_record("Credentials saved...")
     else:
-        print("---- Unable to save credentials...")
+        log_record("Unable to save credentials...")
         raise KeyError
 
 
 def reset_credentials() -> None:
     with open(CREDENTIAL_PATH, "w") as f:
         json.dump({}, f)
-    print("---- Credentials reset...")
+    log_record("Credentials reset...")
 
 
 def connect() -> None:
@@ -168,7 +170,7 @@ def connect() -> None:
     connect_as_station()
 
     if sta.status() != 3:
-        print("---- Could not connect as client...")
+        log_record("Could not connect as client...")
         sta.disconnect()
         sta.active(False)
         connect_as_access_point()
@@ -178,12 +180,12 @@ def connect() -> None:
         ap.active(False)
         NIC = sta
 
-    print(NetworkInfo(ap))
-    print(NetworkInfo(sta))
+    log_record(f"\n{NetworkInfo(ap)}\n")
+    log_record(f"\n{NetworkInfo(sta)}\n")
 
 
 def connect_as_access_point() -> None:
-    print(f"---- Connecting as access point, SSID: {NetworkInfo(ap).hostname}")
+    log_record(f"Connecting as access point, SSID: {NetworkInfo(ap).hostname}")
     ap.config(ssid=NetworkInfo(ap).hostname, password=AP_PASSWORD)
     ap.active(True)
     time.sleep(0.1)
@@ -193,7 +195,7 @@ def connect_as_access_point() -> None:
 
 
 def connect_as_station() -> None:
-    print("---- Connecting as client...")
+    log_record("Connecting as client...")
     sta.active(True)
 
     # Load the cached ssid/password.
@@ -208,7 +210,7 @@ def connect_as_station() -> None:
             if sta.status() < 0 or sta.status() >= 3:
                 break
             wait -= 1
-            print("---- Waiting for connection...")
+            log_record("Waiting for connection...")
             sleep(1)
 
 
