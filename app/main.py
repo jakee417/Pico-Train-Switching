@@ -1,5 +1,3 @@
-# Import this to avoid memory allocation failure.
-import app.lib.picozero
 from app.connect import connect
 import app.microdot_server as microdot_server
 from app.server_methods import post, shutdown
@@ -11,8 +9,8 @@ def run() -> None:
     # [1] Connect to wifi network
     connect()
     # [2] Setup pins
-    for i in range(1, 28, 2):
-        post(str(i) + "," + str(i + 1), "relay")
+    for i in range(1, 2, 1):
+        post(str(i), "singlerelay")
     # [3] Start webserver
     try:
 

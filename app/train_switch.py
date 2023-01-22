@@ -386,9 +386,9 @@ class OnOff(BinaryDevice):
             self.relay.off()
 
     def _action(self, action: str) -> str:
-        if action == OnOff.off_state:
+        if action == self.off_state:
             self.relay.off()
-        elif action == OnOff.on_state:
+        elif action == self.on_state:
             self.relay.on()
         elif action is None:
             pass
@@ -471,6 +471,28 @@ class InvertedUnloader(OnOff):
         self.__name__ = "Unloader(i)"
 
 
+class SingleRelayTrainSwitch(OnOff):
+    """Relay Train Switch using only one DigitalOutputDevice."""
+
+    on_state: str = "straight"
+    off_state: str = "turn"
+
+    def __init__(self, active_high=False, **kwargs) -> None:
+        super(SingleRelayTrainSwitch, self).__init__(active_high=active_high, **kwargs)
+        self.__name__ = "Single Relay Train Switch"
+
+    def custom_state_setter(self, state: str) -> None:
+        pass
+
+
+class InvertedSingleRelayTrainSwitch(SingleRelayTrainSwitch):
+    """Inverted Relay Train Switch using only one DigitalOutputDevice."""
+
+    def __init__(self, **kwargs) -> None:
+        super(InvertedSingleRelayTrainSwitch, self).__init__(active_high=True, **kwargs)
+        self.__name__ = "Single Relay(i) Train Switch"
+
+
 class SpurTrainSwitch(RelayTrainSwitch):
     """Extension of Relay Switch that will optionally depower the track."""
 
@@ -512,16 +534,10 @@ class InvertedRelayTrainSwitch(RelayTrainSwitch):
 
 
 CLS_MAP: dict[str, type[BinaryDevice]] = {
-    "relay": RelayTrainSwitch,
-    "servo": ServoTrainSwitch,
-    "spur": SpurTrainSwitch,
-    "spuri": InvertedSpurTrainSwitch,
-    "relayi": InvertedRelayTrainSwitch,
-    "Relay Train Switch": RelayTrainSwitch,
     "Servo Train Switch": ServoTrainSwitch,
-    "Spur Train Switch": SpurTrainSwitch,
-    "Spur(i) Train Switch": InvertedSpurTrainSwitch,
-    "Relay(i) Train Switch": InvertedRelayTrainSwitch,
+    "servo": ServoTrainSwitch,
+    "Relay Train Switch": RelayTrainSwitch,
+    "relay": RelayTrainSwitch,
     "On/Off": OnOff,
     "onoff": OnOff,
     "Disconnect": Disconnect,
@@ -532,4 +548,14 @@ CLS_MAP: dict[str, type[BinaryDevice]] = {
     "disconnecti": InvertedDisconnect,
     "Unloader(i)": InvertedUnloader,
     "unloaderi": InvertedUnloader,
+    "Single Relay Train Switch": SingleRelayTrainSwitch,
+    "singlerelay": SingleRelayTrainSwitch,
+    "Single Relay(i) Train Switch": InvertedSingleRelayTrainSwitch,
+    "singlerelayi": InvertedSingleRelayTrainSwitch,
+    "Spur Train Switch": SpurTrainSwitch,
+    "spur": SpurTrainSwitch,
+    "Spur(i) Train Switch": InvertedSpurTrainSwitch,
+    "spuri": InvertedSpurTrainSwitch,
+    "Relay(i) Train Switch": InvertedRelayTrainSwitch,
+    "relayi": InvertedRelayTrainSwitch,
 }
