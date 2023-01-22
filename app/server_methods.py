@@ -29,9 +29,18 @@ DEVICE_TYPES: list[str] = list(
 APP_RESET_WAIT_TIME: int = 5
 
 
+######################################################################
+# API Return Types
+######################################################################
+
+
 class StatusMessage(object):
     SUCCESS: str = "success"
     FAILURE: str = "failure"
+
+
+class ProfileRequest(object):
+    NAME: str = "NAME"
 
 
 ######################################################################
@@ -39,67 +48,39 @@ class StatusMessage(object):
 ######################################################################
 
 
-def get() -> dict[str, object]:
-    """Retrives the current device container."""
+def get_devices() -> dict[str, list[dict[str, object]]]:
+    """Retrieves the current device container."""
     global devices
-    global pin_pool
-    return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
+    return get_return_dict(devices)
 
 
-def toggle_pins(pins: str) -> dict[str, object]:
+def toggle_pins(pins: str) -> dict[str, list[dict[str, object]]]:
     """Toggle the state of a device, or set to "self.on_state" by default."""
     global devices
-    global pin_pool
     _pins = convert_csv_tuples(pins)
-    on_state = devices[str(_pins)].on_state
-    off_state = devices[str(_pins)].off_state
-    if devices[str(_pins)].state == on_state:
-        devices[str(_pins)].action(off_state)
+    device = devices[str(_pins)]
+    if device.state == device.on_state:
+        devices[str(_pins)].action(device.off_state)
     else:
-        devices[str(_pins)].action(on_state)
-    return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
+        devices[str(_pins)].action(device.on_state)
+    return get_return_dict(OrderedDict({str(_pins): devices[str(_pins)]}))
 
 
-def reset_pins(pins: str) -> dict[str, object]:
+def reset_pins(pins: str) -> dict[str, list[dict[str, object]]]:
     """Resets the state of a device at a given set of pins."""
     global devices
-    global pin_pool
     _pins = convert_csv_tuples(pins)
     devices[str(_pins)].action(None)  # type: ignore
-    return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
+    return get_return_dict(OrderedDict({str(_pins): devices[str(_pins)]}))
 
 
-def toggle_index(device: int) -> dict[str, object]:
-    """Toggle the state of a device, or set to "self.on_state" by default."""
-    global devices
-    global pin_pool
-    pins = index_to_pins(device)
-    on_state: str = devices[str(pins)].on_state
-    off_state: str = devices[str(pins)].off_state
-    if devices[pins].state == on_state:
-        devices[str(pins)].action(off_state)
-    else:
-        devices[str(pins)].action(on_state)
-    return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
-
-
-def reset_index(device: int) -> dict[str, object]:
-    """Resets the state of a device."""
-    global devices
-    global pin_pool
-    pins = index_to_pins(device)
-    devices[pins].action(None)  # type: ignore
-    return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
-
-
-def change(pins: str, device_type: str) -> dict[str, object]:
+def change_pins(pins: str, device_type: str) -> dict[str, list[dict[str, object]]]:
     """Change a device type for a set of pins.
 
     Notes:
         The current amount of pins must match the new amount of pins.
     """
     global devices
-    global pin_pool
     new_cls = CLS_MAP.get(device_type, None)
     _pins = convert_csv_tuples(pins)
 
@@ -110,28 +91,43 @@ def change(pins: str, device_type: str) -> dict[str, object]:
 
         # Needs the same amount of pins.
         if len(_pins) != new_cls.required_pins:
-            raise ValueError(
+            log_record(
                 f"Not enough pins for {new_cls}. Found {len(_pins)} expected {new_cls.required_pins}"
             )
+            raise ValueError
 
         # New pin amount should match old pin amount.
         if current_pin_amount != new_cls.required_pins:
-            raise ValueError(
+            log_record(
                 f"Pin amounts do not match. Found {new_cls.required_pins} expected {current_pin_amount}."
             )
+            raise ValueError
 
         # Perform the change.
         current_device.close()
-        devices.update({str(_pins): new_cls(pin=_pins)})
+        new_device = new_cls(pin=_pins)
+        devices.update({str(_pins): new_device})
+        return get_return_dict(OrderedDict({str(_pins): devices[str(_pins)]}))
+    else:
+        log_record(
+            f"Requested Device Type not found or pins {str(_pins)} were not already in use."
+        )
+        raise ValueError
 
-    # pin_pool should remain unchanged since we are swapping device types.
-    return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
+
+def get_profiles() -> dict[str, list[str]]:
+    """Gets all of the profile names without file extension."""
+    profiles = os.listdir(PROFILE_PATH)
+    profiles = [i.split(".")[0] for i in profiles]
+    profiles.sort()
+    return {"profiles": profiles}
 
 
-def load_json(name: str) -> dict[str, object]:
+def load_json(json: dict[str, str]) -> dict[str, list[dict[str, object]]]:
     """Loads a JSON profile."""
     global devices
     global pin_pool
+    name = read_profile_json(json)
     path: str = PROFILE_PATH + name + ".json"
 
     # Load a json string from a file stream.
@@ -153,23 +149,27 @@ def load_json(name: str) -> dict[str, object]:
     close_devices(devices)  # close out old devices
     devices = construct_from_cfg(cfg)  # start new devices
     pin_pool = update_pin_pool(devices)
-    return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
+    return get_return_dict(devices)
 
 
-def remove_json(name: str) -> dict[str, object]:
+def remove_json(json: dict[str, str]) -> dict[str, list[str]]:
     """Removes a JSON profile."""
     global devices
-    global pin_pool
+    name = read_profile_json(json)
     path = PROFILE_PATH + name + ".json"
-    os.remove(path)
-    log_record(f"Removed file: {path}")
-    return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
+    try:
+        os.remove(path)
+        log_record(f"Removed file: {path}")
+        return get_profiles()
+    except Exception as e:
+        log_record(str(e))
+        raise e
 
 
-def save_json(name: str) -> dict[str, object]:
+def save_json(json: dict[str, str]) -> dict[str, list[str]]:
     """Saves a JSON profile."""
     global devices
-    global pin_pool
+    name = read_profile_json(json)
     path: str = PROFILE_PATH + name.strip() + ".json"
     devices_json = devices_to_json(devices)
     order: list[str] = []
@@ -180,30 +180,19 @@ def save_json(name: str) -> dict[str, object]:
         order += [k]
 
     devices_json["order"] = order  # type: ignore
-
-    with open(path, "w") as f:
-        ujson.dump(devices_json, f)
-    log_record(f"Saved devices: {devices_json} as {path}")
-    return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
-
-
-def delete(pins: str) -> dict[str, object]:
-    """Deletes a device."""
-    global devices
-    global pin_pool
-    _pins = convert_csv_tuples(pins)
-    deleted = devices.pop(str(_pins), None)
-    if deleted:
-        deleted.close()
-        # add the pins back into the pool
-        [pin_pool.add(p) for p in deleted.pin_list]
-    return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
+    try:
+        with open(path, "w") as f:
+            ujson.dump(devices_json, f)
+        log_record(f"Saved devices: {devices_json} as {path}")
+        return get_profiles()
+    except Exception as e:
+        log_record(str(e))
+        raise e
 
 
-def post(pins: str, device_type: str) -> dict[str, object]:
+def post(pins: str, device_type: str) -> dict[str, list[dict[str, object]]]:
     """Adds a new device."""
     global devices
-    global pin_pool
     device_cls = CLS_MAP.get(device_type, None)
     # device type must be legal
     if device_cls is not None:
@@ -214,7 +203,13 @@ def post(pins: str, device_type: str) -> dict[str, object]:
             log_record(f"{added} is started...")
             devices.update({str(_pins): added})  # add to global container
             [pin_pool.remove(p) for p in added.pin_list]  # remove availability
-    return app_return_dict(devices, sort_pool(pin_pool), DEVICE_TYPES)
+            return get_return_dict(devices)
+        else:
+            log_record(f"Requested pins were not available or not unique.")
+            raise ValueError
+    else:
+        log_record(f"Requested Device Type not found.")
+        raise ValueError
 
 
 def app_reset() -> None:
@@ -231,12 +226,33 @@ def app_reset() -> None:
 ######################################################################
 
 
-def index_to_pins(device: int) -> str:
-    global devices
-    device -= 1  # user will see devices as 1-indexed, convert to 0-indexed
-    order = [k for k, _ in devices.items()]  # get ordering of pins
-    pins = order[device]
-    return pins
+def get_return_dict(
+    devices: OrderedDict[str, BinaryDevice]
+) -> dict[str, list[dict[str, object]]]:
+    """Returns a json-returnable dict for an app call."""
+    return {
+        "devices": list(devices_to_json(devices).values()),
+    }
+
+
+def devices_to_json(
+    devices: OrderedDict[str, BinaryDevice]
+) -> OrderedDict[str, dict[str, object]]:
+    """Returns a serializiable {str(pins): str(device)} mapping of devices."""
+    devices_json: OrderedDict[str, dict[str, object]] = OrderedDict({})
+    # NOTE: Use __iter__ instead of list comprehension to maintain
+    # ordering of OrderedDict.
+    for pin, d in devices.items():
+        devices_json.update({str(pin): d.to_json()})
+    return devices_json
+
+
+def read_profile_json(json: dict[str, str]) -> str:
+    name = json.get(ProfileRequest.NAME, None)
+    if name is None:
+        log_record("Could not find NAME in profile request.")
+        raise ValueError
+    return name
 
 
 def led_flash(func):
@@ -246,12 +262,6 @@ def led_flash(func):
         picozero.pico_led.off()
 
     return wrapper
-
-
-class PinNotInPinPool(Exception):
-    """Raised when a pin is accessed that is not available for use."""
-
-    pass
 
 
 def close_devices(devices: OrderedDict[str, BinaryDevice]) -> None:
@@ -299,51 +309,20 @@ def sort_pool(pool: set[int]) -> list[int]:
     return l
 
 
-def app_return_dict(
-    devices: OrderedDict[str, BinaryDevice],
-    pin_pool: list[int],
-    device_types: list[str],
-) -> dict[str, object]:
-    """Returns a json-returnable dict for an app call."""
-    devices_json = devices_to_json(devices)
-    return {
-        "devices": list(devices_json.values()),
-        # TODO: Leaving stubs as these used to be used.
-        # "pin_pool": pin_pool,
-        # "device_types": device_types,
-        "profiles": get_all_profiles(),
-    }
-
-
-def devices_to_json(
-    devices: OrderedDict[str, BinaryDevice]
-) -> OrderedDict[str, dict[str, object]]:
-    """Returns a serializiable {str(pins): str(device)} mapping of devices."""
-    devices_json: OrderedDict[str, dict[str, object]] = OrderedDict({})
-    # NOTE: Use __iter__ instead of list comprehension to maintain
-    # ordering of OrderedDict.
-    for pin, d in devices.items():
-        devices_json.update({str(pin): d.to_json()})
-    return devices_json
-
-
-def get_all_profiles() -> list[str]:
-    """Gets all of the profile names without file extension."""
-    profiles = os.listdir(PROFILE_PATH)
-    profiles = [i.split(".")[0] for i in profiles]
-    profiles.sort()
-    return profiles
-
-
 def update_pin_pool(devices: OrderedDict[str, BinaryDevice]) -> set[int]:
     """Update a pool of pins based off current devices."""
+
+    class PinNotInPinPool(Exception):
+        """Raised when a pin is accessed that is not available for use."""
+
+        pass
+
     pin_pool = GPIO_PINS.copy()
     for _, d in devices.items():
         for p in d.pin_list:
             if p not in pin_pool:
-                raise PinNotInPinPool(
-                    f"pin {p}, {type(p)} was not in pin pool: {pin_pool}."
-                )
+                log_record(f"pin {p}, {type(p)} was not in pin pool: {pin_pool}.")
+                raise PinNotInPinPool
             pin_pool.remove(p)
     return pin_pool
 
