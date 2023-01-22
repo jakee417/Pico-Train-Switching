@@ -1,6 +1,6 @@
 __name__ = "picozero"
 __package__ = "picozero"
-__version__ = '0.4.1'
+__version__ = "0.4.1"
 __author__ = "Raspberry Pi Foundation"
 
 from app.lib.picozero import (
@@ -10,4 +10,5 @@ from app.lib.picozero import (
     pico_led,
     PWMOutputDevice,
     Servo,
+    AngularServo,
 )

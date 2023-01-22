@@ -308,7 +308,8 @@ def app_return_dict(
     devices_json = devices_to_json(devices)
     return {
         "devices": list(devices_json.values()),
-        "pin_pool": pin_pool,
+        # TODO: Leaving stubs as these used to be used.
+        # "pin_pool": pin_pool,
         # "device_types": device_types,
         "profiles": get_all_profiles(),
     }

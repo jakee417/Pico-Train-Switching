@@ -9,7 +9,8 @@ def run() -> None:
     # [1] Connect to wifi network
     connect()
     # [2] Setup pins
-    for i in range(1, 2, 1):
+    post("0", "servo")
+    for i in range(1, 3, 1):
         post(str(i), "singlerelay")
     # [3] Start webserver
     try:

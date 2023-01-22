@@ -27,6 +27,12 @@ from app.server_methods import (
 app = Microdot()
 
 
+@app.get("/")
+@led_flash
+def root(_: Request) -> str:
+    return StatusMessage.SUCCESS
+
+
 @app.get("/devices")
 @led_flash
 def devices(_: Request) -> str:
