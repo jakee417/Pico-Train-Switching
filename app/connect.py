@@ -189,8 +189,9 @@ def connect_as_access_point() -> None:
     ap.config(ssid=NetworkInfo(ap).hostname, password=AP_PASSWORD)
     ap.active(True)
     time.sleep(0.1)
-    # TODO: Find sensible defaults that the client can hardcode as a static ip.
-    # ap.ifconfig((AP_IP, AP_SUBNET, AP_GATEWAY, AP_DNS))
+    # NOTE: These are the defaults for rp2 port of micropython.
+    #   It doesn't seem possible to change these without side-effects.
+    ap.ifconfig((AP_IP, AP_SUBNET, AP_GATEWAY, AP_DNS))
     time.sleep(0.1)
 
 

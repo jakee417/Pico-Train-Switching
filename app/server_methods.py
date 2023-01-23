@@ -26,7 +26,7 @@ DEVICE_TYPES: list[str] = list(
     {k: {"requirement": v.required_pins} for k, v in CLS_MAP.items()}.keys()
 )
 
-APP_RESET_WAIT_TIME: int = 5
+APP_RESET_WAIT_TIME: int = 3
 
 
 ######################################################################
@@ -41,6 +41,11 @@ class StatusMessage(object):
 
 class ProfileRequest(object):
     NAME: str = "NAME"
+
+
+class ResponseKey(object):
+    DEVICES: str = "devices"
+    PROFILES: str = "profiles"
 
 
 ######################################################################
@@ -120,7 +125,7 @@ def get_profiles() -> dict[str, list[str]]:
     profiles = os.listdir(PROFILE_PATH)
     profiles = [i.split(".")[0] for i in profiles]
     profiles.sort()
-    return {"profiles": profiles}
+    return {ResponseKey.PROFILES: profiles}
 
 
 def load_json(json: dict[str, str]) -> dict[str, list[dict[str, object]]]:
@@ -134,7 +139,6 @@ def load_json(json: dict[str, str]) -> dict[str, list[dict[str, object]]]:
     log_record(f"JSON path: {path}")
     with open(path, "r") as f:
         json_str: str = f.read()
-        log_record(f"Loading JSON: {json_str}")
 
     # Load the config as an unordered dictionary.
     _cfg: dict[str, dict[str, object]] = ujson.loads(json_str)
@@ -183,7 +187,7 @@ def save_json(json: dict[str, str]) -> dict[str, list[str]]:
     try:
         with open(path, "w") as f:
             ujson.dump(devices_json, f)
-        log_record(f"Saved devices: {devices_json} as {path}")
+        log_record(f"Saved devices: devices at {path}")
         return get_profiles()
     except Exception as e:
         log_record(str(e))
@@ -200,7 +204,6 @@ def post(pins: str, device_type: str) -> dict[str, list[dict[str, object]]]:
         # pins must be available and not the same
         if all([p in pin_pool for p in _pins]) and len(set(_pins)) == len(_pins):
             added = device_cls(pin=_pins)
-            log_record(f"{added} is started...")
             devices.update({str(_pins): added})  # add to global container
             [pin_pool.remove(p) for p in added.pin_list]  # remove availability
             return get_return_dict(devices)
@@ -231,7 +234,7 @@ def get_return_dict(
 ) -> dict[str, list[dict[str, object]]]:
     """Returns a json-returnable dict for an app call."""
     return {
-        "devices": list(devices_to_json(devices).values()),
+        ResponseKey.DEVICES: list(devices_to_json(devices).values()),
     }
 
 
@@ -268,7 +271,6 @@ def close_devices(devices: OrderedDict[str, BinaryDevice]) -> None:
     """Close all connections in a dictionary of devices."""
     # close all pre existing connections
     for _, device in devices.items():
-        log_record(f"{device} is closed...")
         device.close()
     del devices  # garbage collect
 

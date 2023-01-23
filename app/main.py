@@ -9,12 +9,10 @@ def run() -> None:
     # [1] Connect to wifi network
     connect()
     # [2] Setup pins
-    post("0", "servo")
-    for i in range(1, 3, 1):
+    for i in range(0, 29, 1):
         post(str(i), "singlerelay")
     # [3] Start webserver
     try:
-
         microdot_server.run()
     except (OSError, KeyboardInterrupt) as e:
         log_record(str(e))
