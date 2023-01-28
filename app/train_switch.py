@@ -176,8 +176,7 @@ class ServoTrainSwitch(BinaryDevice):
 
         self.__name__ = "Servo Train Switch"
         if len(self.pin) != self.get_required_pins:
-            raise ValueError(f"Expecting one pin. Found {self.pin}")
-        self.pin_name = self.pin[0]
+            raise ValueError(f"Expecting {self.required_pins} pins. Found {self.pin}")
         self.min_angle = min_angle
         self.max_angle = max_angle
         self.initial_angle = initial_angle
@@ -193,7 +192,7 @@ class ServoTrainSwitch(BinaryDevice):
         # _dc_range = (max_pulse_width - min_pulse_width) / frame_width = 0.12%
         # => max_pulse_width = 24 / 10,000
         self.servo = AngularServo(
-            pin=self.pin_name,
+            pin=self.pin[0],
             initial_angle=self.initial_angle,
             min_angle=self.min_angle,
             max_angle=self.max_angle,
@@ -228,6 +227,14 @@ class ServoTrainSwitch(BinaryDevice):
 
     def __del__(self) -> None:
         self.servo.close()
+
+
+class DoubleServoTrainSwitch(ServoTrainSwitch):
+    required_pins = 2
+
+    def __init__(self, **kwargs) -> None:
+        super(DoubleServoTrainSwitch, self).__init__(**kwargs)
+        self.__name__ = "Double Servo Train Switch"
 
 
 class RelayTrainSwitch(BinaryDevice):
@@ -476,6 +483,8 @@ class InvertedRelayTrainSwitch(RelayTrainSwitch):
 CLS_MAP: dict[str, type[BinaryDevice]] = {
     "Servo Train Switch": ServoTrainSwitch,
     "servo": ServoTrainSwitch,
+    "Double Servo Train Switch": DoubleServoTrainSwitch,
+    "doubleservo": DoubleServoTrainSwitch,
     "Relay Train Switch": RelayTrainSwitch,
     "relay": RelayTrainSwitch,
     "On/Off": OnOff,

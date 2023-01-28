@@ -9,8 +9,9 @@ def run() -> None:
     # [1] Connect to wifi network
     connect()
     # [2] Setup pins
-    for i in range(0, 29, 1):
-        post(str(i), "singlerelay")
+    post("0,1", "doubleservo")
+    for i in range(2, 28, 2):
+        post(f"{i},{i+1}", "relay")
     # [3] Start webserver
     try:
         microdot_server.run()
