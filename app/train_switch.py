@@ -176,8 +176,7 @@ class ServoTrainSwitch(BinaryDevice):
 
         self.__name__ = "Servo Train Switch"
         if len(self.pin) != self.get_required_pins:
-            raise ValueError(
-                f"Expecting {self.required_pins} pins. Found {self.pin}")
+            raise ValueError(f"Expecting {self.required_pins} pins. Found {self.pin}")
         self.min_angle = min_angle
         self.max_angle = max_angle
         self.initial_angle = initial_angle
@@ -216,8 +215,7 @@ class ServoTrainSwitch(BinaryDevice):
             return None  # type: ignore
         else:
             raise ValueError(
-                "Invalid command to train switch." +
-                f"\n Found action: {action}"
+                "Invalid command to train switch." + f"\n Found action: {action}"
             )
         return angle
 
@@ -293,8 +291,7 @@ class RelayTrainSwitch(BinaryDevice):
             pass
         else:
             raise ValueError(
-                "Invalid command to train switch." +
-                f"\n Found action: {action}"
+                "Invalid command to train switch." + f"\n Found action: {action}"
             )
         return action
 
@@ -344,13 +341,20 @@ class OnOff(BinaryDevice):
             pass
         else:
             raise ValueError(
-                "Invalid command to on/off device." +
-                f"\n Found action: {action}"
+                "Invalid command to on/off device." + f"\n Found action: {action}"
             )
         return action
 
     def __del__(self) -> None:
         self.relay.close()
+
+
+class DoubleOnOff(OnOff):
+    required_pins = 2
+
+    def __init__(self, **kwargs) -> None:
+        super(DoubleOnOff, self).__init__(**kwargs)
+        self.__name__ = "Double On/Off"
 
 
 class Disconnect(OnOff):
@@ -387,8 +391,7 @@ class Disconnect(OnOff):
             )
         else:
             raise ValueError(
-                "Invalid command to Disconnect device." +
-                f"\n Found action: {action}"
+                "Invalid command to Disconnect device." + f"\n Found action: {action}"
             )
         return action
 
@@ -399,12 +402,28 @@ class Disconnect(OnOff):
         super().__del__()
 
 
+class DoubleDisconnect(Disconnect):
+    required_pins = 2
+
+    def __init__(self, **kwargs) -> None:
+        super(DoubleDisconnect, self).__init__(**kwargs)
+        self.__name__ = "Double Disconnect"
+
+
 class Unloader(OnOff):
     """Extension of On/Off for Unloader accessory."""
 
     def __init__(self, **kwargs) -> None:
         super(Unloader, self).__init__(active_high=False, **kwargs)
         self.__name__ = "Unloader"
+
+
+class DoubleUnloader(Unloader):
+    required_pins = 2
+
+    def __init__(self, **kwargs) -> None:
+        super(DoubleUnloader, self).__init__(**kwargs)
+        self.__name__ = "Double Unloader"
 
 
 class InvertedDisconnect(Disconnect):
@@ -430,8 +449,7 @@ class SingleRelayTrainSwitch(OnOff):
     off_state: str = "turn"
 
     def __init__(self, active_high=False, **kwargs) -> None:
-        super(SingleRelayTrainSwitch, self).__init__(
-            active_high=active_high, **kwargs)
+        super(SingleRelayTrainSwitch, self).__init__(active_high=active_high, **kwargs)
         self.__name__ = "Single Relay Train Switch"
 
     def custom_state_setter(self, state: str) -> None:
@@ -442,8 +460,7 @@ class InvertedSingleRelayTrainSwitch(SingleRelayTrainSwitch):
     """Inverted Relay Train Switch using only one DigitalOutputDevice."""
 
     def __init__(self, **kwargs) -> None:
-        super(InvertedSingleRelayTrainSwitch, self).__init__(
-            active_high=True, **kwargs)
+        super(InvertedSingleRelayTrainSwitch, self).__init__(active_high=True, **kwargs)
         self.__name__ = "Single Relay(i) Train Switch"
 
 
@@ -451,8 +468,7 @@ class SpurTrainSwitch(RelayTrainSwitch):
     """Extension of Relay Switch that will optionally depower the track."""
 
     def __init__(self, active_high: bool = False, **kwargs) -> None:
-        super(SpurTrainSwitch, self).__init__(
-            active_high=active_high, **kwargs)
+        super(SpurTrainSwitch, self).__init__(active_high=active_high, **kwargs)
         self.__name__ = "Spur Train Switch"
 
     def _action(self, action: str) -> str:
@@ -467,8 +483,7 @@ class SpurTrainSwitch(RelayTrainSwitch):
             pass
         else:
             raise ValueError(
-                "Invalid command to train switch." +
-                f"\n Found action: {action}"
+                "Invalid command to train switch." + f"\n Found action: {action}"
             )
         return action
 
@@ -477,8 +492,7 @@ class InvertedSpurTrainSwitch(SpurTrainSwitch):
     """Extension of Spur Train Switch but with inverted active_high."""
 
     def __init__(self, **kwargs) -> None:
-        super(InvertedSpurTrainSwitch, self).__init__(
-            active_high=True, **kwargs)
+        super(InvertedSpurTrainSwitch, self).__init__(active_high=True, **kwargs)
         self.__name__ = "Spur(i) Train Switch"
 
 
@@ -486,18 +500,13 @@ class InvertedRelayTrainSwitch(RelayTrainSwitch):
     """Extension of Relay Train Switch but with inverted active_high."""
 
     def __init__(self, **kwargs) -> None:
-        super(InvertedRelayTrainSwitch, self).__init__(
-            active_high=True, **kwargs)
+        super(InvertedRelayTrainSwitch, self).__init__(active_high=True, **kwargs)
         self.__name__ = "Relay(i) Train Switch"
 
 
-CLS_MAP: dict[str, type[BinaryDevice]] = {
+SINGLE_PIN_MAP: dict[str, type[BinaryDevice]] = {
     "Servo Train Switch": ServoTrainSwitch,
     "servo": ServoTrainSwitch,
-    "Double Servo Train Switch": DoubleServoTrainSwitch,
-    "doubleservo": DoubleServoTrainSwitch,
-    "Relay Train Switch": RelayTrainSwitch,
-    "relay": RelayTrainSwitch,
     "On/Off": OnOff,
     "onoff": OnOff,
     "Disconnect": Disconnect,
@@ -512,10 +521,23 @@ CLS_MAP: dict[str, type[BinaryDevice]] = {
     "singlerelay": SingleRelayTrainSwitch,
     "Single Relay(i) Train Switch": InvertedSingleRelayTrainSwitch,
     "singlerelayi": InvertedSingleRelayTrainSwitch,
+}
+
+CLS_MAP: dict[str, type[BinaryDevice]] = {
+    "Relay Train Switch": RelayTrainSwitch,
+    "relay": RelayTrainSwitch,
+    "Relay(i) Train Switch": InvertedRelayTrainSwitch,
+    "relayi": InvertedRelayTrainSwitch,
     "Spur Train Switch": SpurTrainSwitch,
     "spur": SpurTrainSwitch,
     "Spur(i) Train Switch": InvertedSpurTrainSwitch,
     "spuri": InvertedSpurTrainSwitch,
-    "Relay(i) Train Switch": InvertedRelayTrainSwitch,
-    "relayi": InvertedRelayTrainSwitch,
+    "Double Servo Train Switch": DoubleServoTrainSwitch,
+    "doubleservo": DoubleServoTrainSwitch,
+    "Double Disconnect": DoubleDisconnect,
+    "doubledisconnect": DoubleDisconnect,
+    "Double Unloader": DoubleUnloader,
+    "doubleunloader": DoubleUnloader,
+    "Double On/Off": DoubleOnOff,
+    "doubleonoff": DoubleOnOff,
 }
