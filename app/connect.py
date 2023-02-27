@@ -198,7 +198,7 @@ def connect_as_access_point() -> None:
 
 def connect_as_station() -> None:
     log_record("Connecting as client...")
-    sta.config(hostname=NetworkInfo(sta).hostname)
+    sta.config(ssid=NetworkInfo(ap).hostname, hostname=NetworkInfo(sta).hostname)
     sta.active(True)
 
     # Load the cached ssid/password.
