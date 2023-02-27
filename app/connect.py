@@ -77,8 +77,9 @@ class NetworkInfo(object):
         (self.ip, self.subnet_mask, self.gateway, self.dns) = wlan.ifconfig()
         self.mac = self.wlan_mac_address(wlan)
         _hostname: str = self.mac.replace(":", "")
-        # TODO: Replace this with a dynamic value based off serial.
-        self.hostname: str = f"Railyard_{_hostname}"
+        # NOTE: Hostname size is limited. Possibly need to lengthen
+        # if collisions are occuring.
+        self.hostname: str = f"Railyard_{_hostname[5:]}"
         self.connected: bool = wlan.isconnected()
         self.status: int = wlan.status()
 
