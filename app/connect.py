@@ -187,7 +187,11 @@ def connect() -> None:
 
 def connect_as_access_point() -> None:
     log_record(f"Connecting as access point, SSID: {NetworkInfo(ap).hostname}")
-    ap.config(ssid=NetworkInfo(ap).hostname, password=AP_PASSWORD, hostname=NetworkInfo(ap).hostname)
+    ap.config(
+        ssid=NetworkInfo(ap).hostname,
+        password=AP_PASSWORD,
+        hostname=NetworkInfo(ap).hostname,
+    )
     ap.active(True)
     time.sleep(0.1)
     # NOTE: These are the defaults for rp2 port of micropython.
