@@ -79,7 +79,7 @@ class NetworkInfo(object):
         _hostname: str = self.mac.replace(":", "")
         # NOTE: Hostname size is limited. Possibly need to lengthen
         # if collisions are occuring.
-        self.hostname: str = f"Railyard_{_hostname[5:]}"
+        self.hostname: str = f"Railyard{_hostname[5:]}"
         self.connected: bool = wlan.isconnected()
         self.status: int = wlan.status()
 
