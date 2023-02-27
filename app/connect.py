@@ -14,7 +14,7 @@ AP_IP = "192.168.4.1"
 AP_SUBNET = "255.255.255.0"
 AP_GATEWAY = "192.168.4.1"
 AP_DNS = "0.0.0.0"
-AP_PASSWORD = "password"
+AP_PASSWORD = "getready2switchtrains"
 
 CREDENTIAL_FOLDER = "secrets"
 CREDENTIAL_PATH = f"./{CREDENTIAL_FOLDER}/secrets.json"
@@ -79,7 +79,7 @@ class NetworkInfo(object):
         _hostname: str = self.mac.replace(":", "")
         # NOTE: Hostname size is limited. Possibly need to lengthen
         # if collisions are occuring.
-        self.hostname: str = f"Railyard{_hostname[5:]}"
+        self.hostname: str = f"Railyard{_hostname[:3]}"
         self.connected: bool = wlan.isconnected()
         self.status: int = wlan.status()
 
