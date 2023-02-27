@@ -76,8 +76,9 @@ class NetworkInfo(object):
         self.wlan = wlan
         (self.ip, self.subnet_mask, self.gateway, self.dns) = wlan.ifconfig()
         self.mac = self.wlan_mac_address(wlan)
+        _hostname: str = self.mac.replace(":", "")
         # TODO: Replace this with a dynamic value based off serial.
-        self.hostname: str = "pybd"
+        self.hostname: str = f"Railyard_{_hostname}"
         self.connected: bool = wlan.isconnected()
         self.status: int = wlan.status()
 
@@ -186,7 +187,7 @@ def connect() -> None:
 
 def connect_as_access_point() -> None:
     log_record(f"Connecting as access point, SSID: {NetworkInfo(ap).hostname}")
-    ap.config(ssid=NetworkInfo(ap).hostname, password=AP_PASSWORD)
+    ap.config(ssid=NetworkInfo(ap).hostname, password=AP_PASSWORD, hostname=NetworkInfo(ap).hostname)
     ap.active(True)
     time.sleep(0.1)
     # NOTE: These are the defaults for rp2 port of micropython.
@@ -197,6 +198,7 @@ def connect_as_access_point() -> None:
 
 def connect_as_station() -> None:
     log_record("Connecting as client...")
+    sta.config(hostname=NetworkInfo(sta).hostname)
     sta.active(True)
 
     # Load the cached ssid/password.
