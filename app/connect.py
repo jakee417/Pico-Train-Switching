@@ -169,7 +169,7 @@ def connect() -> None:
     If this fails, then default to an Access Point using default credentials.
     """
     global NIC
-    # Set the global hostname to be a combination of "RailYard" and the 
+    # Set the global hostname to be a combination of "RailYard" and the
     # devices MAC address to ensure uniqueness.
     network.hostname(NetworkInfo(sta).hostname)
     connect_as_station()
