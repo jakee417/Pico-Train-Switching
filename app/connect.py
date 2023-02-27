@@ -168,6 +168,9 @@ def connect() -> None:
     If this fails, then default to an Access Point using default credentials.
     """
     global NIC
+    # Set the global hostname to be a combination of "RailYard" and the 
+    # devices MAC address to ensure uniqueness.
+    network.hostname(NetworkInfo(sta).hostname)
     connect_as_station()
 
     if sta.status() != 3:
@@ -190,7 +193,6 @@ def connect_as_access_point() -> None:
     ap.config(
         ssid=NetworkInfo(ap).hostname,
         password=AP_PASSWORD,
-        hostname=NetworkInfo(ap).hostname,
     )
     ap.active(True)
     time.sleep(0.1)
@@ -202,7 +204,7 @@ def connect_as_access_point() -> None:
 
 def connect_as_station() -> None:
     log_record("Connecting as client...")
-    sta.config(ssid=NetworkInfo(ap).hostname, hostname=NetworkInfo(sta).hostname)
+    sta.config(ssid=NetworkInfo(ap).hostname)
     sta.active(True)
 
     # Load the cached ssid/password.
