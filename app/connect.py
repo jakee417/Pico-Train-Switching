@@ -14,7 +14,7 @@ AP_IP = "192.168.4.1"
 AP_SUBNET = "255.255.255.0"
 AP_GATEWAY = "192.168.4.1"
 AP_DNS = "0.0.0.0"
-AP_PASSWORD = "password"
+AP_PASSWORD = "getready2switchtrains"
 
 CREDENTIAL_FOLDER = "secrets"
 CREDENTIAL_PATH = f"./{CREDENTIAL_FOLDER}/secrets.json"
@@ -76,8 +76,8 @@ class NetworkInfo(object):
         self.wlan = wlan
         (self.ip, self.subnet_mask, self.gateway, self.dns) = wlan.ifconfig()
         self.mac = self.wlan_mac_address(wlan)
-        # TODO: Replace this with a dynamic value based off serial.
-        self.hostname: str = "pybd"
+        _hostname: str = self.mac.replace(":", "")
+        self.hostname: str = f"Railyard{_hostname[-6:]}"
         self.connected: bool = wlan.isconnected()
         self.status: int = wlan.status()
 
@@ -167,6 +167,9 @@ def connect() -> None:
     If this fails, then default to an Access Point using default credentials.
     """
     global NIC
+    # Set the global hostname to be a combination of "RailYard" and the
+    # devices MAC address to ensure uniqueness.
+    network.hostname(NetworkInfo(sta).hostname)  # type: ignore
     connect_as_station()
 
     if sta.status() != 3:
@@ -186,7 +189,10 @@ def connect() -> None:
 
 def connect_as_access_point() -> None:
     log_record(f"Connecting as access point, SSID: {NetworkInfo(ap).hostname}")
-    ap.config(ssid=NetworkInfo(ap).hostname, password=AP_PASSWORD)
+    ap.config(
+        ssid=NetworkInfo(ap).hostname,
+        password=AP_PASSWORD,
+    )
     ap.active(True)
     time.sleep(0.1)
     # NOTE: These are the defaults for rp2 port of micropython.
@@ -197,6 +203,7 @@ def connect_as_access_point() -> None:
 
 def connect_as_station() -> None:
     log_record("Connecting as client...")
+    sta.config(ssid=NetworkInfo(ap).hostname)
     sta.active(True)
 
     # Load the cached ssid/password.

@@ -141,6 +141,32 @@ class BinaryDevice(object):
         self.__del__()
 
 
+class EmptySwitch(BinaryDevice):
+    required_pins = 2
+    on_state = None  # type: ignore
+    off_state = None  # type: ignore
+
+    def __init__(
+        self,
+        **kwargs,
+    ) -> None:
+        """Dummy device to indicate nothing is being used."""
+        super(EmptySwitch, self).__init__(**kwargs)
+        self.__name__ = "Empty"
+
+        if len(self.pin) != self.get_required_pins:
+            raise ValueError(f"Expecting two pins. Found {self.pin}")
+
+    def custom_state_setter(self, state: str) -> None:
+        pass
+
+    def _action(self, action: str) -> str:
+        return action
+
+    def __del__(self) -> None:
+        pass
+
+
 class ServoAngle(object):
     """Angle for a ServoTrainSwitch."""
 
@@ -524,6 +550,8 @@ SINGLE_PIN_MAP: dict[str, type[BinaryDevice]] = {
 }
 
 CLS_MAP: dict[str, type[BinaryDevice]] = {
+    "Empty": EmptySwitch,
+    "empty": EmptySwitch,
     "Relay Train Switch": RelayTrainSwitch,
     "relay": RelayTrainSwitch,
     "Relay(i) Train Switch": InvertedRelayTrainSwitch,
