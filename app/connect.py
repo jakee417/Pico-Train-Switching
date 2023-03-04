@@ -169,7 +169,7 @@ def connect() -> None:
     global NIC
     # Set the global hostname to be a combination of "RailYard" and the
     # devices MAC address to ensure uniqueness.
-    network.hostname(NetworkInfo(sta).hostname)
+    network.hostname(NetworkInfo(sta).hostname)  # type: ignore
     connect_as_station()
 
     if sta.status() != 3:

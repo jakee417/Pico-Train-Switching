@@ -143,8 +143,8 @@ class BinaryDevice(object):
 
 class EmptySwitch(BinaryDevice):
     required_pins = 2
-    on_state = "on"
-    off_state = "off"
+    on_state = None  # type: ignore
+    off_state = None  # type: ignore
 
     def __init__(
         self,
