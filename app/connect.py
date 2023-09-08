@@ -3,6 +3,7 @@ import time
 import network
 from time import sleep
 from network import WLAN
+from micropython import const
 import binascii
 import json
 
@@ -59,12 +60,12 @@ class ScanResult(object):
     @property
     def json(self) -> dict[str, str]:
         return {
-            "SSID": self.ssid,
-            "BSSID": self.bssid,
-            "CHANNEL": self.channel,
-            "RSSI": self.RSSI,
-            "SECURITY": self.security,
-            "HIDDEN": self.hidden,
+            const("SSID"): self.ssid,
+            const("BSSID"): self.bssid,
+            const("CHANNEL"): self.channel,
+            const("RSSI"): self.RSSI,
+            const("SECURITY"): self.security,
+            const("HIDDEN"): self.hidden,
         }
 
 
@@ -89,12 +90,12 @@ class NetworkInfo(object):
     @property
     def json(self) -> dict[str, str]:
         return {
-            "HOSTNAME": self.hostname,
-            "IP": self.ip,
-            "MAC": self.mac,
-            "CONNECTED": str(self.connected),
-            "STATUS": str(self.status),
-            "VERSION": APP_VERSION,
+            const("HOSTNAME"): self.hostname,
+            const("IP"): self.ip,
+            const("MAC"): self.mac,
+            const("CONNECTED"): str(self.connected),
+            const("STATUS"): str(self.status),
+            const("VERSION"): APP_VERSION,
         }
 
     def __repr__(self) -> str:

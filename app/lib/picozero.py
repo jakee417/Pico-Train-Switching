@@ -1,6 +1,5 @@
-from machine import Pin, PWM, Timer, ADC
-from micropython import schedule
-from time import ticks_ms, ticks_us, sleep
+from machine import Pin, PWM, Timer
+from time import sleep
 
 ###############################################################################
 # EXCEPTIONS

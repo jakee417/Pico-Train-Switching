@@ -1,6 +1,7 @@
 """Train switch classes"""
 import time
 from machine import Timer
+from micropython import const
 
 from app.lib.picozero import DigitalOutputDevice, AngularServo
 
@@ -11,7 +12,7 @@ SAFE_SHUTDOWN: int = 4  # how long to wait before shutting down disconnect
 
 class BinaryDevice(object):
     required_pins: int = -1
-    __pin: tuple[int] = tuple()
+    __pin: tuple[int, ...] = tuple()
     # Optional[str]
     __state: str = None  # type: ignore
     on_state: str = ""
@@ -19,7 +20,7 @@ class BinaryDevice(object):
 
     def __init__(
         self,
-        pin: tuple[int],
+        pin: tuple[int, ...],
     ) -> None:
         """Base class for any device with two states, on_state & off_state.
 
@@ -46,7 +47,7 @@ class BinaryDevice(object):
         return self.__name__
 
     @property
-    def pin(self) -> tuple[int]:
+    def pin(self) -> tuple[int, ...]:
         """Returns the pin number(s)."""
         return self.__pin
 
@@ -65,7 +66,7 @@ class BinaryDevice(object):
         # Subclasses must change this attribute.
         if self.required_pins == -1:
             raise NotImplementedError(
-                f"Overwrite required_pins when extending BinaryDevice."
+                "Overwrite required_pins when extending BinaryDevice."
             )
         return self.required_pins
 
@@ -96,7 +97,11 @@ class BinaryDevice(object):
                 - state
                 - name
         """
-        return {"pins": self.pin, "state": self.state, "name": self.name}
+        return {
+            const("pins"): self.pin,
+            const("state"): self.state,
+            const("name"): self.name,
+        }
 
     def log(self, initial_state: str, action: str, update: str) -> None:
         """Logs update message"""
@@ -531,41 +536,41 @@ class InvertedRelayTrainSwitch(RelayTrainSwitch):
 
 
 SINGLE_PIN_MAP: dict[str, type[BinaryDevice]] = {
-    "Servo Train Switch": ServoTrainSwitch,
-    "servo": ServoTrainSwitch,
-    "On/Off": OnOff,
-    "onoff": OnOff,
-    "Disconnect": Disconnect,
-    "disconnect": Disconnect,
-    "Unloader": Unloader,
-    "unloader": Unloader,
-    "Disconnect(i)": InvertedDisconnect,
-    "disconnecti": InvertedDisconnect,
-    "Unloader(i)": InvertedUnloader,
-    "unloaderi": InvertedUnloader,
-    "Single Relay Train Switch": SingleRelayTrainSwitch,
-    "singlerelay": SingleRelayTrainSwitch,
-    "Single Relay(i) Train Switch": InvertedSingleRelayTrainSwitch,
-    "singlerelayi": InvertedSingleRelayTrainSwitch,
+    const("Servo Train Switch"): ServoTrainSwitch,
+    const("servo"): ServoTrainSwitch,
+    const("On/Off"): OnOff,
+    const("onoff"): OnOff,
+    const("Disconnect"): Disconnect,
+    const("disconnect"): Disconnect,
+    const("Unloader"): Unloader,
+    const("unloader"): Unloader,
+    const("Disconnect(i)"): InvertedDisconnect,
+    const("disconnecti"): InvertedDisconnect,
+    const("Unloader(i)"): InvertedUnloader,
+    const("unloaderi"): InvertedUnloader,
+    const("Single Relay Train Switch"): SingleRelayTrainSwitch,
+    const("singlerelay"): SingleRelayTrainSwitch,
+    const("Single Relay(i) Train Switch"): InvertedSingleRelayTrainSwitch,
+    const("singlerelayi"): InvertedSingleRelayTrainSwitch,
 }
 
 CLS_MAP: dict[str, type[BinaryDevice]] = {
-    "Empty": EmptySwitch,
-    "empty": EmptySwitch,
-    "Relay Train Switch": RelayTrainSwitch,
-    "relay": RelayTrainSwitch,
-    "Relay(i) Train Switch": InvertedRelayTrainSwitch,
-    "relayi": InvertedRelayTrainSwitch,
-    "Spur Train Switch": SpurTrainSwitch,
-    "spur": SpurTrainSwitch,
-    "Spur(i) Train Switch": InvertedSpurTrainSwitch,
-    "spuri": InvertedSpurTrainSwitch,
-    "Double Servo Train Switch": DoubleServoTrainSwitch,
-    "doubleservo": DoubleServoTrainSwitch,
-    "Double Disconnect": DoubleDisconnect,
-    "doubledisconnect": DoubleDisconnect,
-    "Double Unloader": DoubleUnloader,
-    "doubleunloader": DoubleUnloader,
-    "Double On/Off": DoubleOnOff,
-    "doubleonoff": DoubleOnOff,
+    const("Empty"): EmptySwitch,
+    const("empty"): EmptySwitch,
+    const("Relay Train Switch"): RelayTrainSwitch,
+    const("relay"): RelayTrainSwitch,
+    const("Relay(i) Train Switch"): InvertedRelayTrainSwitch,
+    const("relayi"): InvertedRelayTrainSwitch,
+    const("Spur Train Switch"): SpurTrainSwitch,
+    const("spur"): SpurTrainSwitch,
+    const("Spur(i) Train Switch"): InvertedSpurTrainSwitch,
+    const("spuri"): InvertedSpurTrainSwitch,
+    const("Double Servo Train Switch"): DoubleServoTrainSwitch,
+    const("doubleservo"): DoubleServoTrainSwitch,
+    const("Double Disconnect"): DoubleDisconnect,
+    const("doubledisconnect"): DoubleDisconnect,
+    const("Double Unloader"): DoubleUnloader,
+    const("doubleunloader"): DoubleUnloader,
+    const("Double On/Off"): DoubleOnOff,
+    const("doubleonoff"): DoubleOnOff,
 }
