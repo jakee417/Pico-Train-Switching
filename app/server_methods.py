@@ -54,7 +54,7 @@ class ResponseKey(object):
 
 
 def get_devices() -> dict[str, list[dict[str, object]]]:
-    """Retrieves the current device container."""
+    """Retrieve the current device container."""
     global devices
     return get_return_dict(devices)
 
@@ -72,7 +72,7 @@ def toggle_pins(pins: str) -> dict[str, list[dict[str, object]]]:
 
 
 def reset_pins(pins: str) -> dict[str, list[dict[str, object]]]:
-    """Resets the state of a device at a given set of pins."""
+    """Reset the state of a device at a given set of pins."""
     global devices
     _pins = convert_csv_tuples(pins)
     devices[str(_pins)].action(None)  # type: ignore
@@ -82,7 +82,8 @@ def reset_pins(pins: str) -> dict[str, list[dict[str, object]]]:
 def change_pins(pins: str, device_type: str) -> dict[str, list[dict[str, object]]]:
     """Change a device type for a set of pins.
 
-    Notes:
+    Notes
+    -----
         The current amount of pins must match the new amount of pins.
     """
     global devices
@@ -121,7 +122,7 @@ def change_pins(pins: str, device_type: str) -> dict[str, list[dict[str, object]
 
 
 def get_profiles() -> dict[str, list[str]]:
-    """Gets all of the profile names without file extension."""
+    """Get all the profile names without file extension."""
     profiles = os.listdir(PROFILE_PATH)
     profiles = [i.split(".")[0] for i in profiles]
     profiles.sort()
@@ -129,7 +130,7 @@ def get_profiles() -> dict[str, list[str]]:
 
 
 def load_json(json: dict[str, str]) -> dict[str, list[dict[str, object]]]:
-    """Loads a JSON profile."""
+    """Load a JSON profile."""
     global devices
     global pin_pool
     name = read_profile_json(json)
@@ -157,7 +158,7 @@ def load_json(json: dict[str, str]) -> dict[str, list[dict[str, object]]]:
 
 
 def remove_json(json: dict[str, str]) -> dict[str, list[str]]:
-    """Removes a JSON profile."""
+    """Remove a JSON profile."""
     global devices
     name = read_profile_json(json)
     path = PROFILE_PATH + name + ".json"
@@ -171,7 +172,7 @@ def remove_json(json: dict[str, str]) -> dict[str, list[str]]:
 
 
 def save_json(json: dict[str, str]) -> dict[str, list[str]]:
-    """Saves a JSON profile."""
+    """Save a JSON profile."""
     global devices
     name = read_profile_json(json)
     path: str = PROFILE_PATH + name.strip() + ".json"
@@ -195,7 +196,7 @@ def save_json(json: dict[str, str]) -> dict[str, list[str]]:
 
 
 def post(pins: str, device_type: str) -> dict[str, list[dict[str, object]]]:
-    """Adds a new device."""
+    """Add a new device."""
     global devices
     device_cls = CLS_MAP.get(device_type, None)
     # device type must be legal
@@ -208,10 +209,10 @@ def post(pins: str, device_type: str) -> dict[str, list[dict[str, object]]]:
             [pin_pool.remove(p) for p in added.pin_list]  # remove availability
             return get_return_dict(devices)
         else:
-            log_record(f"Requested pins were not available or not unique.")
+            log_record("Requested pins were not available or not unique.")
             raise ValueError
     else:
-        log_record(f"Requested Device Type not found.")
+        log_record("Requested Device Type not found.")
         raise ValueError
 
 
@@ -232,16 +233,14 @@ def app_reset() -> None:
 def get_return_dict(
     devices: OrderedDict[str, BinaryDevice]
 ) -> dict[str, list[dict[str, object]]]:
-    """Returns a json-returnable dict for an app call."""
-    return {
-        ResponseKey.DEVICES: list(devices_to_json(devices).values()),
-    }
+    """Return a json-returnable dict for an app call."""
+    return {ResponseKey.DEVICES: list(devices_to_json(devices).values())}
 
 
 def devices_to_json(
     devices: OrderedDict[str, BinaryDevice]
 ) -> OrderedDict[str, dict[str, object]]:
-    """Returns a serializiable {str(pins): str(device)} mapping of devices."""
+    """Return a serializiable {str(pins): str(device)} mapping of devices."""
     devices_json: OrderedDict[str, dict[str, object]] = OrderedDict({})
     # NOTE: Use __iter__ instead of list comprehension to maintain
     # ordering of OrderedDict.
@@ -282,7 +281,7 @@ def close_devices_closure() -> None:
 def construct_from_cfg(
     cfg: OrderedDict[str, dict[str, object]]
 ) -> OrderedDict[str, BinaryDevice]:
-    """Constructs a new dictionary of devices from a configuration."""
+    """Construct a new dictionary of devices from a configuration."""
     # construct switches from config
     devices: OrderedDict[str, BinaryDevice] = OrderedDict({})
     for _, v in cfg.items():
@@ -298,7 +297,7 @@ def construct_from_cfg(
 
 
 def convert_csv_tuples(inputs: str) -> tuple[int]:
-    """Converts a comma seperated list of pins."""
+    """Convert a comma seperated list of pins."""
     inputs_split: list[str] = inputs.split(",")
     inputs_int: list[int] = [int(input) for input in inputs_split]
     inputs_int.sort()
@@ -306,9 +305,9 @@ def convert_csv_tuples(inputs: str) -> tuple[int]:
 
 
 def sort_pool(pool: set[int]) -> list[int]:
-    l = list(pool)
-    l.sort()
-    return l
+    _pool = list(pool)
+    _pool.sort()
+    return _pool
 
 
 def update_pin_pool(devices: OrderedDict[str, BinaryDevice]) -> set[int]:
@@ -331,7 +330,7 @@ def update_pin_pool(devices: OrderedDict[str, BinaryDevice]) -> set[int]:
 
 def shutdown() -> None:
     """Shutdown all devices, network interfaces, and reset the machine."""
-    log_record(f"Shutting down devices, wlan, and machine...")
+    log_record("Shutting down devices, wlan, and machine...")
     close_devices_closure()
     wlan_shutdown()
     reset()

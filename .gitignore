@@ -4,3 +4,4 @@
 */secrets.py
 */secrets.json
 .DS_STORE
+.trunk/*

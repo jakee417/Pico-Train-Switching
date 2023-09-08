@@ -147,7 +147,7 @@ def server_save_credentials(request: Request) -> str:
         try:
             _save_credentials(json)
             return StatusMessage.SUCCESS
-        except KeyError as _:
+        except KeyError:
             log_record("Credentials had bad keys")
             return StatusMessage.FAILURE
         except Exception as e:

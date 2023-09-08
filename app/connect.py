@@ -123,7 +123,8 @@ def _save_credentials(data: dict[str, str]) -> None:
 def load_credentials() -> dict[str, str]:
     """Load a password from a json file.
 
-    Notes:
+    Notes
+    -----
         JSON is a single dictionary with schema:
             {
                 Credential.SSID: ...,
@@ -143,7 +144,8 @@ def load_credentials() -> dict[str, str]:
 def save_credentials(data: dict[str, str]) -> None:
     """Save a ssid and password as a credential.
 
-    Notes:
+    Notes
+    -----
         See `load_credentials` for schema.
     """
     if Credential.SSID in data and Credential.PASSWORD in data and len(data) == 2:
