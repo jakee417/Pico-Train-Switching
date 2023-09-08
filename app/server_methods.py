@@ -3,6 +3,7 @@ import ujson
 from machine import reset, Timer
 from collections import OrderedDict
 from app.connect import wlan_shutdown
+from micropython import const
 
 import app.lib.picozero as picozero
 from app.logging import log_record
@@ -23,7 +24,7 @@ if PROFILE_FOLDER not in os.listdir():
 # TODO: Eventually, we want to send both the device type name and the required
 # number of pins. But for now, just give the device type names.
 DEVICE_TYPES: list[str] = list(
-    {k: {"requirement": v.required_pins} for k, v in CLS_MAP.items()}.keys()
+    {k: {const("requirement"): v.required_pins} for k, v in CLS_MAP.items()}.keys()
 )
 
 APP_RESET_WAIT_TIME: int = 3
@@ -68,7 +69,7 @@ def toggle_pins(pins: str) -> dict[str, list[dict[str, object]]]:
         devices[str(_pins)].action(device.off_state)
     else:
         devices[str(_pins)].action(device.on_state)
-    return get_return_dict(OrderedDict({str(_pins): devices[str(_pins)]}))
+    return get_return_dict(OrderedDict({const(str(_pins)): devices[str(_pins)]}))
 
 
 def reset_pins(pins: str) -> dict[str, list[dict[str, object]]]:
@@ -76,7 +77,7 @@ def reset_pins(pins: str) -> dict[str, list[dict[str, object]]]:
     global devices
     _pins = convert_csv_tuples(pins)
     devices[str(_pins)].action(None)  # type: ignore
-    return get_return_dict(OrderedDict({str(_pins): devices[str(_pins)]}))
+    return get_return_dict(OrderedDict({const(str(_pins)): devices[str(_pins)]}))
 
 
 def change_pins(pins: str, device_type: str) -> dict[str, list[dict[str, object]]]:
@@ -112,8 +113,8 @@ def change_pins(pins: str, device_type: str) -> dict[str, list[dict[str, object]
         # Perform the change.
         current_device.close()
         new_device = new_cls(pin=_pins)
-        devices.update({str(_pins): new_device})
-        return get_return_dict(OrderedDict({str(_pins): devices[str(_pins)]}))
+        devices.update({const(str(_pins)): new_device})
+        return get_return_dict(OrderedDict({const(str(_pins)): devices[str(_pins)]}))
     else:
         log_record(
             f"Requested Device Type not found or pins {str(_pins)} were not already in use."
@@ -126,7 +127,7 @@ def get_profiles() -> dict[str, list[str]]:
     profiles = os.listdir(PROFILE_PATH)
     profiles = [i.split(".")[0] for i in profiles]
     profiles.sort()
-    return {ResponseKey.PROFILES: profiles}
+    return {const(ResponseKey.PROFILES): profiles}
 
 
 def load_json(json: dict[str, str]) -> dict[str, list[dict[str, object]]]:
@@ -205,7 +206,7 @@ def post(pins: str, device_type: str) -> dict[str, list[dict[str, object]]]:
         # pins must be available and not the same
         if all([p in pin_pool for p in _pins]) and len(set(_pins)) == len(_pins):
             added = device_cls(pin=_pins)
-            devices.update({str(_pins): added})  # add to global container
+            devices.update({const(str(_pins)): added})  # add to global container
             [pin_pool.remove(p) for p in added.pin_list]  # remove availability
             return get_return_dict(devices)
         else:
@@ -234,7 +235,7 @@ def get_return_dict(
     devices: OrderedDict[str, BinaryDevice]
 ) -> dict[str, list[dict[str, object]]]:
     """Return a json-returnable dict for an app call."""
-    return {ResponseKey.DEVICES: list(devices_to_json(devices).values())}
+    return {const(ResponseKey.DEVICES): list(devices_to_json(devices).values())}
 
 
 def devices_to_json(
@@ -245,7 +246,7 @@ def devices_to_json(
     # NOTE: Use __iter__ instead of list comprehension to maintain
     # ordering of OrderedDict.
     for pin, d in devices.items():
-        devices_json.update({str(pin): d.to_json()})
+        devices_json.update({const(str(pin)): d.to_json()})
     return devices_json
 
 
@@ -286,9 +287,9 @@ def construct_from_cfg(
     devices: OrderedDict[str, BinaryDevice] = OrderedDict({})
     for _, v in cfg.items():
         _pins: tuple[int] = tuple(v["pins"])  # type: ignore
-        _k: str = str(_pins)
+        _k: str = const(str(_pins))
         _v: BinaryDevice = CLS_MAP.get(v["name"])(pin=_pins)  # type: ignore
-        devices.update({_k: _v})
+        devices.update({const(_k): _v})
     # Set states from configuration
     for k, v in devices.items():
         # NOTE: Actually passes an Optional[str]
@@ -296,7 +297,7 @@ def construct_from_cfg(
     return devices
 
 
-def convert_csv_tuples(inputs: str) -> tuple[int]:
+def convert_csv_tuples(inputs: str) -> tuple[int, ...]:
     """Convert a comma seperated list of pins."""
     inputs_split: list[str] = inputs.split(",")
     inputs_int: list[int] = [int(input) for input in inputs_split]
