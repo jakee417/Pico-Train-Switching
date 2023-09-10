@@ -1,0 +1,15 @@
+{
+    "tag": "ota-1",
+    "files": [
+        "app/__init__.py",
+        "app/connect.py",
+        "app/logging.py",
+        "app/main.py",
+        "app/microdot_server.py",
+        "app/server_methods.py",
+        "train_switch.py",
+        "app/lib/__init__.py",
+        "app/lib/microdot.py",
+        "app/lib/picozero.py"
+    ]
+}

@@ -7,16 +7,16 @@ class URL:
     BASE: str = "https://raw.githubusercontent.com"
     user: str
     repo: str
-    commit: str
+    version: str
 
-    def __init__(self, user: str, repo: str, commit: str) -> None:
+    def __init__(self, user: str, repo: str, version: str) -> None:
         self.user = user
         self.repo = repo
-        self.commit = commit
+        self.version = version
 
     @property
     def url(self) -> str:
-        return f"{self.BASE}/{self.user}/{self.repo}/{self.commit}/"
+        return f"{self.BASE}/{self.user}/{self.repo}/{self.version}/"
 
 
 class Config:
@@ -26,14 +26,39 @@ class Config:
     FILES: list[str]
     MANIFEST: str
 
+    def __init__(self):
+        pass
+
 
 class TestConfig(Config):
-    REPO_URL: URL = URL(user="pierreyvesbaloche", repo="kevinmca_ota", commit="main")
+    REPO_URL: URL = URL(user="pierreyvesbaloche", repo="kevinmca_ota", version="main")
     FILES = ["README.md", "test_ota.py"]
     MANIFEST: str = "version.json"
 
-    def __init__(self):
+
+class RailYardConfig(Config):
+    REPO_URL: URL = URL(user="jakee417", repo="Pico-Train-Switching", version="main")
+    FILES = ["app/connect.py", "app/logging.py", "app/main.py", "app/microdot_server.py"]
+    MANIFEST: str = "version.json"
+
+
+class RemoteConfig(Config):
+    """A subclass that finds it's version and files dynamically."""
+    REMOTE_VERSION: str = "version.json"
+
+    def __init__(self, base_url: URL):
+        
+        self.set_files(base_url=base_url)
+
+    def set_files(self, base_url: URL) -> None:
         pass
+
+
+class RailYardRemoteConfig(RemoteConfig):
+    def __init__(self) -> None:
+        base_url = URL(user="jakee417", repo="Pico-Train-Switching", version="main")
+        self.MANIFEST = "version.json"
+        super().__init__(base_url=base_url)
 
 
 def ota():
