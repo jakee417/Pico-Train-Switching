@@ -16,7 +16,7 @@ class RailYardConfig(Config):
 
 class RailYardRemoteConfig(RemoteConfig):
     def __init__(self) -> None:
-        self.MANIFEST = "version.json"
+        self.manifest = "version.json"
         super().__init__(
             remote_url=RepoURL(
                 user="jakee417", repo="Pico-Train-Switching", version="main"

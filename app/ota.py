@@ -175,11 +175,23 @@ def set_current_version(info: VersionInfo, firmware_url: str, tag: str) -> None:
         firmware_url: "https://raw.githubusercontent.com/<username>/<repo_name>/<branch_name>/<path_to_file>".
         tag: see `download_update`.
     """
-    # Get the latest code from the repo.
-    response = urequests.get(firmware_url)
-    # If a tag is provided, use that as the basis of comparison with existing code.
-    # Otherwise, default on hashing the content as a backup tag.
-    new_version = str(hash(response.content)) if tag == Config.tag else tag
+    # If using hashing, we determine the "tag" based off the hash of the response.
+    if tag == Config.tag:
+        # Get the latest code from the repo.
+        response = urequests.get(firmware_url)
+        _set_current_version(
+            info=info, response=response, new_version=str(hash(response.content))
+        )
+    # Otherwise, use the tag provided.
+    elif tag != info.version:
+        _set_current_version(
+            info=info, response=urequests.get(firmware_url), new_version=tag
+        )
+    else:
+        print(info.filename + " deferred.")
+
+
+def _set_current_version(info: VersionInfo, response, new_version: str) -> None:
     if response.status_code == 200 and new_version != info.version:
         # Update the version with the new hash.
         # TODO: Make sure the directory exists.
