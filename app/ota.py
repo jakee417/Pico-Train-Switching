@@ -5,6 +5,7 @@ import urequests
 
 class RepoURL:
     """Abstraction of a url pointing to raw text on github.com"""
+
     BASE: str = "https://raw.githubusercontent.com"
     user: str
     repo: str
@@ -23,33 +24,33 @@ class RepoURL:
 class Config:
     """Base config that provides a repo, files, and manifest for an ota update."""
 
-    REPO_URL: RepoURL
-    FILES: list[str]
-    MANIFEST: str
+    repo_url: RepoURL
+    files: list[str]
+    manifest: str
+    tag: str = "__hash__"
 
     def __init__(self):
         pass
 
 
 class TestConfig(Config):
-    REPO_URL: RepoURL = RepoURL(
+    repo_url: RepoURL = RepoURL(
         user="pierreyvesbaloche", repo="kevinmca_ota", version="main"
     )
-    FILES = ["README.md", "test_ota.py"]
-    MANIFEST: str = "version.json"
+    files = ["README.md", "test_ota.py"]
+    manifest: str = "version.json"
 
 
-class RailYardConfig(Config):
-    REPO_URL: RepoURL = RepoURL(
-        user="jakee417", repo="Pico-Train-Switching", version="main"
-    )
-    FILES = [
-        "app/connect.py",
-        "app/logging.py",
-        "app/main.py",
-        "app/microdot_server.py",
-    ]
-    MANIFEST: str = "version.json"
+def run_ota(config: Config) -> None:
+    """Perform an OTA based upon a configuration."""
+    for file in config.files:
+        # NOTE: each file uses the same tag for consistency.
+        download_update(
+            repo_url=config.repo_url.url,
+            filename=file,
+            manifest=config.manifest,
+            tag=config.tag,
+        )
 
 
 class RemoteConfig(Config):
@@ -59,7 +60,7 @@ class RemoteConfig(Config):
     TAG_KEY: str = "tag"
     FILES_KEY: str = "files"
 
-    def __init__(self, remote_url: RepoURL):
+    def __init__(self, remote_url: RepoURL) -> None:
         """Sets the REPO_URL and FILES attributes dynamically based off a remote config.
 
         Args:
@@ -74,56 +75,26 @@ class RemoteConfig(Config):
                         ...
                     ]
                 }
-
         """
         response = urequests.get(remote_url.url + self.REMOTE_VERSION)
         if response.status_code == 200:
             remote_config = json.loads(response.content)
             if self.TAG_KEY in remote_config and self.FILES_KEY in remote_config:
-                self.REPO_URL = RepoURL(
+                self.tag = remote_config[self.TAG_KEY]
+                self.repo_url = RepoURL(
                     user=remote_url.user,
                     repo=remote_url.repo,
-                    version=remote_config[self.TAG_KEY],
+                    # Now substitute in the tag dynamically.
+                    version=self.tag,
                 )
-                self.FILES = remote_config[self.FILES_KEY]
+                self.files = remote_config[self.FILES_KEY]
             else:
                 raise KeyError(f"{self.TAG_KEY} and {self.FILES_KEY} must present.")
         else:
-            raise FileNotFoundError("Remote configuration was not found.")
+            raise NotImplementedError("Remote configuration was not found.")
 
 
-class RailYardRemoteConfig(RemoteConfig):
-    def __init__(self) -> None:
-        self.MANIFEST = "version.json"
-        super().__init__(
-            remote_url=RepoURL(
-                user="jakee417", repo="Pico-Train-Switching", version="main"
-            )
-        )
-
-
-def ota():
-    """Helper of a helper."""
-    try:
-        run_ota(RailYardRemoteConfig())
-    # If we have a bad config, lets silently fail so that our devices
-    # out in the wild do not start failing mysteriously.
-    except KeyError:
-        pass
-    except FileNotFoundError:
-        pass
-
-
-def run_ota(config: Config) -> None:
-    """Helper function to run a configuration."""
-    for file in config.FILES:
-        print(file + " started...")
-        download_update(
-            repo_url=config.REPO_URL.url, filename=file, manifest=config.MANIFEST
-        )
-
-
-def download_update(repo_url: str, filename: str, manifest: str) -> None:
+def download_update(repo_url: str, filename: str, manifest: str, tag: str) -> None:
     """Check for updates, download and install them.
 
     Args:
@@ -135,9 +106,13 @@ def download_update(repo_url: str, filename: str, manifest: str) -> None:
             "<file_name>": "<str(hash(file contents))>",
             ...
         }
+        tag: Either a tag string or __hash__ if no tag is used.
+            Use a "<tag>" with `RemoteConfig` or "__hash__" with `Config`.
+            If using __hash__, the `str(hash(content))` is used as a basis
+            of comparison.
     """
     info = get_current_version(filename=filename, manifest=manifest)
-    set_current_version(firmware_url=repo_url + filename, info=info)
+    set_current_version(info=info, firmware_url=repo_url + filename, tag=tag)
 
 
 class VersionInfo:
@@ -192,19 +167,22 @@ def get_current_version(filename: str, manifest: str) -> VersionInfo:
     return version_info
 
 
-def set_current_version(firmware_url: str, info: VersionInfo) -> None:
+def set_current_version(info: VersionInfo, firmware_url: str, tag: str) -> None:
     """Set the latest code from the repo.
 
     Args:
-        firmware_url: "https://raw.githubusercontent.com/<username>/<repo_name>/<branch_name>/<path_to_file>".
         info: the current version's information.
+        firmware_url: "https://raw.githubusercontent.com/<username>/<repo_name>/<branch_name>/<path_to_file>".
+        tag: see `download_update`.
     """
     # Get the latest code from the repo.
     response = urequests.get(firmware_url)
-    # Hash the new code to compare against the old.
-    new_version = str(hash(response.content))
+    # If a tag is provided, use that as the basis of comparison with existing code.
+    # Otherwise, default on hashing the content as a backup tag.
+    new_version = str(hash(response.content)) if tag == Config.tag else tag
     if response.status_code == 200 and new_version != info.version:
         # Update the version with the new hash.
+        # TODO: Make sure the directory exists.
         with open(info.filename, "w") as f:
             f.write(response.content)
         # Write the new version to flash memory.
