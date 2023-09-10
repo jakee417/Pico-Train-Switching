@@ -3,7 +3,8 @@ import json
 import urequests
 
 
-class URL:
+class RepoURL:
+    """Abstraction of a url pointing to raw text on github.com"""
     BASE: str = "https://raw.githubusercontent.com"
     user: str
     repo: str
@@ -20,9 +21,9 @@ class URL:
 
 
 class Config:
-    """Base config that provides a repo, files, and manifest to an ota update."""
+    """Base config that provides a repo, files, and manifest for an ota update."""
 
-    REPO_URL: URL
+    REPO_URL: RepoURL
     FILES: list[str]
     MANIFEST: str
 
@@ -31,39 +32,86 @@ class Config:
 
 
 class TestConfig(Config):
-    REPO_URL: URL = URL(user="pierreyvesbaloche", repo="kevinmca_ota", version="main")
+    REPO_URL: RepoURL = RepoURL(
+        user="pierreyvesbaloche", repo="kevinmca_ota", version="main"
+    )
     FILES = ["README.md", "test_ota.py"]
     MANIFEST: str = "version.json"
 
 
 class RailYardConfig(Config):
-    REPO_URL: URL = URL(user="jakee417", repo="Pico-Train-Switching", version="main")
-    FILES = ["app/connect.py", "app/logging.py", "app/main.py", "app/microdot_server.py"]
+    REPO_URL: RepoURL = RepoURL(
+        user="jakee417", repo="Pico-Train-Switching", version="main"
+    )
+    FILES = [
+        "app/connect.py",
+        "app/logging.py",
+        "app/main.py",
+        "app/microdot_server.py",
+    ]
     MANIFEST: str = "version.json"
 
 
 class RemoteConfig(Config):
     """A subclass that finds it's version and files dynamically."""
+
     REMOTE_VERSION: str = "version.json"
+    TAG_KEY: str = "tag"
+    FILES_KEY: str = "files"
 
-    def __init__(self, base_url: URL):
-        
-        self.set_files(base_url=base_url)
+    def __init__(self, remote_url: RepoURL):
+        """Sets the REPO_URL and FILES attributes dynamically based off a remote config.
 
-    def set_files(self, base_url: URL) -> None:
-        pass
+        Args:
+            remote_url: url pointing to a remote configuration on github.
+                Inside this directory, there must exist a file named
+                REMOTE_VERSION = "version.json" with the following schema:
+                {
+                    "tag": "<commit, branch name, or tag>"
+                    "files": [
+                        "<file1>",
+                        "<file2>",
+                        ...
+                    ]
+                }
+
+        """
+        response = urequests.get(remote_url.url + self.REMOTE_VERSION)
+        if response.status_code == 200:
+            remote_config = json.loads(response.content)
+            if self.TAG_KEY in remote_config and self.FILES_KEY in remote_config:
+                self.REPO_URL = RepoURL(
+                    user=remote_url.user,
+                    repo=remote_url.repo,
+                    version=remote_config[self.TAG_KEY],
+                )
+                self.FILES = remote_config[self.FILES_KEY]
+            else:
+                raise KeyError(f"{self.TAG_KEY} and {self.FILES_KEY} must present.")
+        else:
+            raise FileNotFoundError("Remote configuration was not found.")
 
 
 class RailYardRemoteConfig(RemoteConfig):
     def __init__(self) -> None:
-        base_url = URL(user="jakee417", repo="Pico-Train-Switching", version="main")
         self.MANIFEST = "version.json"
-        super().__init__(base_url=base_url)
+        super().__init__(
+            remote_url=RepoURL(
+                user="jakee417", repo="Pico-Train-Switching", version="main"
+            )
+        )
 
 
 def ota():
     """Helper of a helper."""
-    run_ota(TestConfig())
+    try:
+        run_ota(RailYardRemoteConfig())
+    # If we have a bad config, lets silently fail so that our devices
+    # out in the wild do not start failing mysteriously.
+    except KeyError:
+        pass
+    except FileNotFoundError:
+        pass
 
 
 def run_ota(config: Config) -> None:

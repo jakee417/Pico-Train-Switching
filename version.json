@@ -7,7 +7,7 @@
         "app/main.py",
         "app/microdot_server.py",
         "app/server_methods.py",
-        "train_switch.py",
+        "app/train_switch.py",
         "app/lib/__init__.py",
         "app/lib/microdot.py",
         "app/lib/picozero.py"
