@@ -1,5 +1,5 @@
 {
-    "tag": "ota-1",
+    "tag": "test",
     "files": [
         "app/__init__.py",
         "app/connect.py",
