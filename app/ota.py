@@ -3,6 +3,11 @@ import json
 import urequests
 
 
+######################################################################
+# Config and Type Classes
+######################################################################
+
+
 class RepoURL:
     """Abstraction of a url pointing to raw text on github.com"""
 
@@ -39,18 +44,6 @@ class TestConfig(Config):
     )
     files = ["README.md", "test_ota.py"]
     manifest: str = "version.json"
-
-
-def run_ota(config: Config) -> None:
-    """Perform an OTA based upon a configuration."""
-    for file in config.files:
-        # NOTE: each file uses the same tag for consistency.
-        download_update(
-            repo_url=config.repo_url.url,
-            filename=file,
-            manifest=config.manifest,
-            tag=config.tag,
-        )
 
 
 class RemoteConfig(Config):
@@ -94,27 +87,6 @@ class RemoteConfig(Config):
             raise NotImplementedError("Remote configuration was not found.")
 
 
-def download_update(repo_url: str, filename: str, manifest: str, tag: str) -> None:
-    """Check for updates, download and install them.
-
-    Args:
-        repo_url: "https://raw.githubusercontent.com/<username>/<repo_name>/<branch_name>/"
-        filename: name of the file to update. if nested, ensure path is "/" delimited:
-            test/test_ota.py
-        manifest: name of the file on disk that tracks versioning. schema is:
-        {
-            "<file_name>": "<str(hash(file contents))>",
-            ...
-        }
-        tag: Either a tag string or __hash__ if no tag is used.
-            Use a "<tag>" with `RemoteConfig` or "__hash__" with `Config`.
-            If using __hash__, the `str(hash(content))` is used as a basis
-            of comparison.
-    """
-    info = get_current_version(filename=filename, manifest=manifest)
-    set_current_version(info=info, firmware_url=repo_url + filename, tag=tag)
-
-
 class VersionInfo:
     filename: str
     content: dict[str, str]
@@ -137,6 +109,44 @@ class VersionInfo:
     @property
     def version(self) -> str:
         return self.content.get(self.filename, self.NO_VERSION)
+
+
+######################################################################
+# OTA Methods
+######################################################################
+
+
+def run_ota(config: Config) -> None:
+    """Perform an OTA based upon a configuration."""
+    for file in config.files:
+        # NOTE: each file uses the same tag for consistency.
+        download_update(
+            repo_url=config.repo_url.url,
+            filename=file,
+            manifest=config.manifest,
+            tag=config.tag,
+        )
+
+
+def download_update(repo_url: str, filename: str, manifest: str, tag: str) -> None:
+    """Check for updates, download and install them.
+
+    Args:
+        repo_url: "https://raw.githubusercontent.com/<username>/<repo_name>/<branch_name>/"
+        filename: name of the file to update. if nested, ensure path is "/" delimited:
+            test/test_ota.py
+        manifest: name of the file on disk that tracks versioning. schema is:
+        {
+            "<file_name>": "<str(hash(file contents))>",
+            ...
+        }
+        tag: Either a tag string or __hash__ if no tag is used.
+            Use a "<tag>" with `RemoteConfig` or "__hash__" with `Config`.
+            If using __hash__, the `str(hash(content))` is used as a basis
+            of comparison.
+    """
+    info = get_current_version(filename=filename, manifest=manifest)
+    set_current_version(info=info, firmware_url=repo_url + filename, tag=tag)
 
 
 def get_current_version(filename: str, manifest: str) -> VersionInfo:
@@ -182,7 +192,8 @@ def set_current_version(info: VersionInfo, firmware_url: str, tag: str) -> None:
         _set_current_version(
             info=info, response=response, new_version=str(hash(response.content))
         )
-    # Otherwise, use the tag provided.
+    # Otherwise, use the tag provided. Note, now the version check happens
+    # before pulling down any code.
     elif tag != info.version:
         _set_current_version(
             info=info, response=urequests.get(firmware_url), new_version=tag

@@ -1,5 +1,5 @@
 {
-    "tag": "test",
+    "tag": "test-1",
     "files": [
         "app/__init__.py",
         "app/connect.py",
