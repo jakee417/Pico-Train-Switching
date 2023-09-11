@@ -9,18 +9,18 @@ import json
 
 from app.logging import log_record
 
-APP_VERSION = "1.0"
-MAX_WAIT: int = 10
-AP_IP = "192.168.4.1"
-AP_SUBNET = "255.255.255.0"
-AP_GATEWAY = "192.168.4.1"
-AP_DNS = "0.0.0.0"
-AP_PASSWORD = "getready2switchtrains"
+_APP_VERSION = const("1.0")
+_MAX_WAIT: int = const(10)
+_AP_IP = const("192.168.4.1")
+_AP_SUBNET = const("255.255.255.0")
+_AP_GATEWAY = const("192.168.4.1")
+_AP_DNS = const("0.0.0.0")
+_AP_PASSWORD = const("getready2switchtrains")
 
-CREDENTIAL_FOLDER = "secrets"
-CREDENTIAL_PATH = f"./{CREDENTIAL_FOLDER}/secrets.json"
-if CREDENTIAL_FOLDER not in os.listdir():
-    os.mkdir(CREDENTIAL_FOLDER)
+_CREDENTIAL_FOLDER = const("secrets")
+_CREDENTIAL_PATH = const(f"./{_CREDENTIAL_FOLDER}/secrets.json")
+if _CREDENTIAL_FOLDER not in os.listdir():
+    os.mkdir(_CREDENTIAL_FOLDER)
 
 sta: WLAN = network.WLAN(network.STA_IF)
 ap: WLAN = network.WLAN(network.AP_IF)
@@ -95,7 +95,7 @@ class NetworkInfo(object):
             const("MAC"): self.mac,
             const("CONNECTED"): str(self.connected),
             const("STATUS"): str(self.status),
-            const("VERSION"): APP_VERSION,
+            const("VERSION"): _APP_VERSION,
         }
 
     def __repr__(self) -> str:
@@ -117,7 +117,7 @@ def scan() -> list[dict[str, str]]:
 
 
 def _save_credentials(data: dict[str, str]) -> None:
-    with open(CREDENTIAL_PATH, "w") as f:
+    with open(_CREDENTIAL_PATH, "w") as f:
         json.dump(data, f)
 
 
@@ -134,7 +134,7 @@ def load_credentials() -> dict[str, str]:
     """
     json_str: str = "{}"
     try:
-        with open(CREDENTIAL_PATH, "r") as f:
+        with open(_CREDENTIAL_PATH, "r") as f:
             json_str: str = f.read()
     except OSError as e:
         log_record(f"Found {e}, creating new credentials...")
@@ -158,7 +158,7 @@ def save_credentials(data: dict[str, str]) -> None:
 
 
 def reset_credentials() -> None:
-    with open(CREDENTIAL_PATH, "w") as f:
+    with open(_CREDENTIAL_PATH, "w") as f:
         json.dump({}, f)
     log_record("Credentials reset...")
 
@@ -194,13 +194,13 @@ def connect_as_access_point() -> None:
     log_record(f"Connecting as access point, SSID: {NetworkInfo(ap).hostname}")
     ap.config(
         ssid=NetworkInfo(ap).hostname,
-        password=AP_PASSWORD,
+        password=_AP_PASSWORD,
     )
     ap.active(True)
     time.sleep(0.1)
     # NOTE: These are the defaults for rp2 port of micropython.
     #   It doesn't seem possible to change these without side-effects.
-    ap.ifconfig((AP_IP, AP_SUBNET, AP_GATEWAY, AP_DNS))
+    ap.ifconfig((_AP_IP, _AP_SUBNET, _AP_GATEWAY, _AP_DNS))
     time.sleep(0.1)
 
 
@@ -216,7 +216,7 @@ def connect_as_station() -> None:
 
     if ssid is not None and password is not None:
         sta.connect(ssid, password)
-        wait = MAX_WAIT
+        wait = _MAX_WAIT
         while wait > 0:
             if sta.status() < 0 or sta.status() >= 3:
                 break

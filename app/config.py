@@ -1,4 +1,5 @@
-from app.ota import Config, RepoURL, run_ota, RemoteConfig
+from app.ota import Config, RepoURL, OTAUpdate, RemoteConfig
+from app.connect import connect
 
 
 class RailYardConfig(Config):
@@ -15,8 +16,9 @@ class RailYardConfig(Config):
 
 
 class RailYardRemoteConfig(RemoteConfig):
+    manifest = "version.json"
+
     def __init__(self) -> None:
-        self.manifest = "version.json"
         super().__init__(
             remote_url=RepoURL(
                 user="jakee417", repo="Pico-Train-Switching", version="main"
@@ -25,12 +27,17 @@ class RailYardRemoteConfig(RemoteConfig):
 
 
 def ota():
-    """Helper of a helper."""
+    connect()
     try:
-        run_ota(RailYardRemoteConfig())
+        OTAUpdate(config=RailYardRemoteConfig())
     # If we have a bad config, lets silently fail so that our devices
     # out in the wild do not start failing mysteriously.
     except KeyError:
         pass
     except NotImplementedError:
         pass
+
+
+def ota2():
+    connect()
+    OTAUpdate(config=RailYardConfig())

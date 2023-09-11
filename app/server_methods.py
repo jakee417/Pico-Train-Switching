@@ -16,10 +16,10 @@ GPIO_PINS: set[int] = set(range(29))
 devices: OrderedDict[str, BinaryDevice] = OrderedDict({})
 pin_pool: set[int] = GPIO_PINS.copy()
 
-PROFILE_FOLDER = "profiles"
-PROFILE_PATH: str = f"./{PROFILE_FOLDER}/"
-if PROFILE_FOLDER not in os.listdir():
-    os.mkdir(PROFILE_FOLDER)
+_PROFILE_FOLDER = const("profiles")
+_PROFILE_PATH: str = const(f"./{_PROFILE_FOLDER}/")
+if _PROFILE_FOLDER not in os.listdir():
+    os.mkdir(_PROFILE_FOLDER)
 
 # TODO: Eventually, we want to send both the device type name and the required
 # number of pins. But for now, just give the device type names.
@@ -124,7 +124,7 @@ def change_pins(pins: str, device_type: str) -> dict[str, list[dict[str, object]
 
 def get_profiles() -> dict[str, list[str]]:
     """Get all the profile names without file extension."""
-    profiles = os.listdir(PROFILE_PATH)
+    profiles = os.listdir(_PROFILE_PATH)
     profiles = [i.split(".")[0] for i in profiles]
     profiles.sort()
     return {const(ResponseKey.PROFILES): profiles}
@@ -135,7 +135,7 @@ def load_json(json: dict[str, str]) -> dict[str, list[dict[str, object]]]:
     global devices
     global pin_pool
     name = read_profile_json(json)
-    path: str = PROFILE_PATH + name + ".json"
+    path: str = _PROFILE_PATH + name + ".json"
 
     # Load a json string from a file stream.
     log_record(f"JSON path: {path}")
@@ -162,7 +162,7 @@ def remove_json(json: dict[str, str]) -> dict[str, list[str]]:
     """Remove a JSON profile."""
     global devices
     name = read_profile_json(json)
-    path = PROFILE_PATH + name + ".json"
+    path = _PROFILE_PATH + name + ".json"
     try:
         os.remove(path)
         log_record(f"Removed file: {path}")
@@ -176,7 +176,7 @@ def save_json(json: dict[str, str]) -> dict[str, list[str]]:
     """Save a JSON profile."""
     global devices
     name = read_profile_json(json)
-    path: str = PROFILE_PATH + name.strip() + ".json"
+    path: str = _PROFILE_PATH + name.strip() + ".json"
     devices_json = devices_to_json(devices)
     order: list[str] = []
 
