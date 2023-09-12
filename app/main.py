@@ -2,6 +2,7 @@ from app.connect import connect
 import app.microdot_server as microdot_server
 from app.server_methods import post, shutdown
 from app.logging import log_flush, log_record
+from app.config import ota
 
 
 def run() -> None:
@@ -22,6 +23,7 @@ def run() -> None:
     post("20,21", "relay")  # 11
     post("22,26", "relay")  # 12
     post("27,28", "relay")  # 13
+    ota()
     # [3] Start webserver
     try:
         microdot_server.run()

@@ -6,7 +6,6 @@ from app.connect import (
     NetworkInfo,
     nic_closure,
 )
-from app.config import ota
 from app.lib.microdot import Microdot, Request
 from app.logging import log_dump, log_flush
 from app.server_methods import (
@@ -183,4 +182,3 @@ def server_log_flush(_: Request):
 
 def run() -> None:
     app.run(host="0.0.0.0", port=80)
-    ota()
