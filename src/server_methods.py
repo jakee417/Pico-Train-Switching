@@ -2,12 +2,13 @@ import os
 import ujson
 from machine import reset, Timer
 from collections import OrderedDict
-from app.connect import wlan_shutdown
+
 from micropython import const
 
-import app.lib.picozero as picozero
-from app.logging import log_record
-from app.train_switch import CLS_MAP, BinaryDevice
+from .lib.picozero import pico_led
+from .log import log_record
+from .train_switch import CLS_MAP, BinaryDevice
+from .connect import wlan_shutdown
 
 # Raspberry Pi Pico W RP2040 layout
 GPIO_PINS: set[int] = set(range(29))
@@ -260,9 +261,9 @@ def read_profile_json(json: dict[str, str]) -> str:
 
 def led_flash(func):
     async def wrapper(*args, **kwargs):
-        picozero.pico_led.on()
+        pico_led.on()
         await func(*args, **kwargs)
-        picozero.pico_led.off()
+        pico_led.off()
 
     return wrapper
 

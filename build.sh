@@ -1,7 +1,8 @@
 #!/bin/bash
 source .venv/bin/activate
-files=$(find app | grep "\.py")
+files=$(find src | grep "\.py")
 for file in $files
 do
-    python3 -m mpy_cross $file
+    newfile=$(echo $file | sed "s+src/+bin/+" | sed "s+.py+.mpy+")
+    python3 -m mpy_cross $file -o $newfile
 done

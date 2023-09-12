@@ -3,7 +3,7 @@ import time
 from machine import Timer
 from micropython import const
 
-from app.lib.picozero import DigitalOutputDevice, AngularServo
+from .lib.picozero import DigitalOutputDevice, AngularServo
 
 
 BLINK: float = 0.25  # default time to wait between blinking

@@ -1,4 +1,4 @@
-from app.ota import Config, RepoURL, OTAUpdate, RemoteConfig
+from .ota import Config, RepoURL, OTAUpdate, RemoteConfig
 
 
 class RailYardConfig(Config):

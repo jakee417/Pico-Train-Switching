@@ -1,14 +1,14 @@
 from json import dumps
-from app.connect import reset_credentials
-from app.connect import (
+from .connect import (
     save_credentials as _save_credentials,
+    reset_credentials,
     scan,
     NetworkInfo,
     nic_closure,
 )
-from app.lib.microdot import Microdot, Request
-from app.logging import log_dump, log_flush
-from app.server_methods import (
+from .lib.microdot import Microdot, Request
+from .log import log_dump, log_flush
+from .server_methods import (
     StatusMessage,
     change_pins,
     get_devices,

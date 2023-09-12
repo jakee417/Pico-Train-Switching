@@ -1,17 +1,17 @@
 {
     "tag": "test-8",
     "files": [
-        "app/__init__.mpy",
-        "app/config.mpy",
-        "app/connect.mpy",
-        "app/logging.mpy",
-        "app/main.mpy",
-        "app/microdot_server.mpy",
-        "app/ota.mpy",
-        "app/server_methods.mpy",
-        "app/train_switch.mpy",
-        "app/lib/__init__.mpy",
-        "app/lib/microdot.mpy",
-        "app/lib/picozero.mpy"
+        "bin/__init__.mpy",
+        "bin/config.mpy",
+        "bin/connect.mpy",
+        "bin/logging.mpy",
+        "bin/main.mpy",
+        "bin/microdot_server.mpy",
+        "bin/ota.mpy",
+        "bin/server_methods.mpy",
+        "bin/train_switch.mpy",
+        "bin/lib/__init__.mpy",
+        "bin/lib/microdot.mpy",
+        "bin/lib/picozero.mpy"
     ]
 }
