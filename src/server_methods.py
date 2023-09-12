@@ -2,7 +2,6 @@ import os
 import ujson
 from machine import reset, Timer
 from collections import OrderedDict
-
 from micropython import const
 
 from .lib.picozero import pico_led
