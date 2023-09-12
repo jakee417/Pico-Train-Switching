@@ -7,7 +7,6 @@ from micropython import const
 import binascii
 import json
 
-from app.logging import log_record
 
 _APP_VERSION = const("1.0")
 _MAX_WAIT: int = const(10)
@@ -18,7 +17,7 @@ _AP_DNS = const("0.0.0.0")
 _AP_PASSWORD = const("getready2switchtrains")
 
 _CREDENTIAL_FOLDER = const("secrets")
-_CREDENTIAL_PATH = const(f"./{_CREDENTIAL_FOLDER}/secrets.json")
+_CREDENTIAL_PATH = f"./{_CREDENTIAL_FOLDER}/secrets.json"
 if _CREDENTIAL_FOLDER not in os.listdir():
     os.mkdir(_CREDENTIAL_FOLDER)
 
@@ -136,8 +135,7 @@ def load_credentials() -> dict[str, str]:
     try:
         with open(_CREDENTIAL_PATH, "r") as f:
             json_str: str = f.read()
-    except OSError as e:
-        log_record(f"Found {e}, creating new credentials...")
+    except OSError:
         _save_credentials({})
     return json.loads(json_str)
 
@@ -151,16 +149,13 @@ def save_credentials(data: dict[str, str]) -> None:
     """
     if Credential.SSID in data and Credential.PASSWORD in data and len(data) == 2:
         _save_credentials(data)
-        log_record("Credentials saved...")
     else:
-        log_record("Unable to save credentials...")
         raise KeyError
 
 
 def reset_credentials() -> None:
     with open(_CREDENTIAL_PATH, "w") as f:
         json.dump({}, f)
-    log_record("Credentials reset...")
 
 
 def connect() -> None:
@@ -176,7 +171,6 @@ def connect() -> None:
     connect_as_station()
 
     if sta.status() != 3:
-        log_record("Could not connect as client...")
         sta.disconnect()
         sta.active(False)
         connect_as_access_point()
@@ -186,12 +180,8 @@ def connect() -> None:
         ap.active(False)
         NIC = sta
 
-    log_record(f"\n{NetworkInfo(ap)}\n")
-    log_record(f"\n{NetworkInfo(sta)}\n")
-
 
 def connect_as_access_point() -> None:
-    log_record(f"Connecting as access point, SSID: {NetworkInfo(ap).hostname}")
     ap.config(
         ssid=NetworkInfo(ap).hostname,
         password=_AP_PASSWORD,
@@ -205,7 +195,6 @@ def connect_as_access_point() -> None:
 
 
 def connect_as_station() -> None:
-    log_record("Connecting as client...")
     sta.config(ssid=NetworkInfo(ap).hostname)
     sta.active(True)
 
@@ -221,7 +210,6 @@ def connect_as_station() -> None:
             if sta.status() < 0 or sta.status() >= 3:
                 break
             wait -= 1
-            log_record("Waiting for connection...")
             sleep(1)
 
 

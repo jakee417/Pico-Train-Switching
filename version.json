@@ -1,15 +1,17 @@
 {
-    "tag": "test-1",
+    "tag": "__hash__",
     "files": [
-        "app/__init__.py",
-        "app/connect.py",
-        "app/logging.py",
-        "app/main.py",
-        "app/microdot_server.py",
-        "app/server_methods.py",
-        "app/train_switch.py",
-        "app/lib/__init__.py",
-        "app/lib/microdot.py",
-        "app/lib/picozero.py"
+        "app/__init__.mpy",
+        "app/config.mpy",
+        "app/connect.mpy",
+        "app/logging.mpy",
+        "app/main.mpy",
+        "app/microdot_server.mpy",
+        "app/ota.mpy",
+        "app/server_methods.mpy",
+        "app/train_switch.mpy",
+        "app/lib/__init__.mpy",
+        "app/lib/microdot.mpy",
+        "app/lib/picozero.mpy"
     ]
 }
