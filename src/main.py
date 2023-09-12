@@ -1,5 +1,5 @@
 from .connect import connect
-from . import microdot_server
+from .microdot_server import run as _run
 from .server_methods import post, shutdown
 from .log import log_flush, log_record
 
@@ -24,7 +24,7 @@ def run() -> None:
     post("27,28", "relay")  # 13
     # [3] Start webserver
     try:
-        microdot_server.run()
+        _run()
     except (OSError, KeyboardInterrupt) as e:
         log_record(str(e))
         shutdown()
