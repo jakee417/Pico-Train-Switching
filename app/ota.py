@@ -161,10 +161,8 @@ class OTAUpdate:
         Args:
             config: a configuration containing information needed to update.
         """
-        print("Begin OTA update...")
         self.info = VersionInfo(manifest=config.manifest)
         for file in config.files:
-            print(f"Begin {file} update...")
             self.update(
                 repo_url=config.repo_url.url,
                 file=file,
