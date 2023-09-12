@@ -1,5 +1,4 @@
 from app.ota import Config, RepoURL, OTAUpdate, RemoteConfig
-from app.connect import connect
 
 
 class RailYardConfig(Config):
@@ -27,7 +26,6 @@ class RailYardRemoteConfig(RemoteConfig):
 
 
 def ota():
-    connect()
     try:
         OTAUpdate(config=RailYardRemoteConfig())
     # If we have a bad config, lets silently fail so that our devices
@@ -39,5 +37,4 @@ def ota():
 
 
 def ota2():
-    connect()
     OTAUpdate(config=RailYardConfig())

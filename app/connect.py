@@ -7,6 +7,8 @@ from micropython import const
 import binascii
 import json
 
+from app.config import ota
+
 
 _APP_VERSION = const("1.0")
 _MAX_WAIT: int = const(10)
@@ -179,6 +181,7 @@ def connect() -> None:
         ap.disconnect()
         ap.active(False)
         NIC = sta
+        ota()
 
 
 def connect_as_access_point() -> None:
