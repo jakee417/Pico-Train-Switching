@@ -5,7 +5,6 @@ from collections import OrderedDict
 from micropython import const
 
 from .lib.picozero import pico_led
-from .logging import log_record
 from .train_switch import CLS_MAP, BinaryDevice
 from .connect import wlan_shutdown
 
@@ -98,17 +97,15 @@ def change_pins(pins: str, device_type: str) -> dict[str, list[dict[str, object]
 
         # Needs the same amount of pins.
         if len(_pins) != new_cls.required_pins:
-            log_record(
+            raise ValueError(
                 f"Not enough pins for {new_cls}. Found {len(_pins)} expected {new_cls.required_pins}"
             )
-            raise ValueError
 
         # New pin amount should match old pin amount.
         if current_pin_amount != new_cls.required_pins:
-            log_record(
+            raise ValueError(
                 f"Pin amounts do not match. Found {new_cls.required_pins} expected {current_pin_amount}."
             )
-            raise ValueError
 
         # Perform the change.
         current_device.close()
@@ -116,10 +113,9 @@ def change_pins(pins: str, device_type: str) -> dict[str, list[dict[str, object]
         devices.update({const(str(_pins)): new_device})
         return get_return_dict(OrderedDict({const(str(_pins)): devices[str(_pins)]}))
     else:
-        log_record(
+        raise ValueError(
             f"Requested Device Type not found or pins {str(_pins)} were not already in use."
         )
-        raise ValueError
 
 
 def get_profiles() -> dict[str, list[str]]:
@@ -138,7 +134,6 @@ def load_json(json: dict[str, str]) -> dict[str, list[dict[str, object]]]:
     path: str = _PROFILE_PATH + name + ".json"
 
     # Load a json string from a file stream.
-    log_record(f"JSON path: {path}")
     with open(path, "r") as f:
         json_str: str = f.read()
 
@@ -163,13 +158,8 @@ def remove_json(json: dict[str, str]) -> dict[str, list[str]]:
     global devices
     name = read_profile_json(json)
     path = _PROFILE_PATH + name + ".json"
-    try:
-        os.remove(path)
-        log_record(f"Removed file: {path}")
-        return get_profiles()
-    except Exception as e:
-        log_record(str(e))
-        raise e
+    os.remove(path)
+    return get_profiles()
 
 
 def save_json(json: dict[str, str]) -> dict[str, list[str]]:
@@ -186,14 +176,9 @@ def save_json(json: dict[str, str]) -> dict[str, list[str]]:
         order += [k]
 
     devices_json["order"] = order  # type: ignore
-    try:
-        with open(path, "w") as f:
-            ujson.dump(devices_json, f)
-        log_record(f"Saved devices: devices at {path}")
-        return get_profiles()
-    except Exception as e:
-        log_record(str(e))
-        raise e
+    with open(path, "w") as f:
+        ujson.dump(devices_json, f)
+    return get_profiles()
 
 
 def post(pins: str, device_type: str) -> dict[str, list[dict[str, object]]]:
@@ -210,15 +195,12 @@ def post(pins: str, device_type: str) -> dict[str, list[dict[str, object]]]:
             [pin_pool.remove(p) for p in added.pin_list]  # remove availability
             return get_return_dict(devices)
         else:
-            log_record("Requested pins were not available or not unique.")
-            raise ValueError
+            raise ValueError("Requested pins were not available or not unique.")
     else:
-        log_record("Requested Device Type not found.")
-        raise ValueError
+        raise ValueError("Requested Device Type not found.")
 
 
 def app_reset() -> None:
-    log_record(f"Starting Shutdown Timer in {APP_RESET_WAIT_TIME}(s)...")
     Timer(
         period=APP_RESET_WAIT_TIME * 1000,
         mode=Timer.ONE_SHOT,
@@ -253,8 +235,7 @@ def devices_to_json(
 def read_profile_json(json: dict[str, str]) -> str:
     name = json.get(ProfileRequest.NAME, None)
     if name is None:
-        log_record("Could not find NAME in profile request.")
-        raise ValueError
+        raise ValueError("Could not find NAME in profile request.")
     return name
 
 
@@ -323,15 +304,15 @@ def update_pin_pool(devices: OrderedDict[str, BinaryDevice]) -> set[int]:
     for _, d in devices.items():
         for p in d.pin_list:
             if p not in pin_pool:
-                log_record(f"pin {p}, {type(p)} was not in pin pool: {pin_pool}.")
-                raise PinNotInPinPool
+                raise PinNotInPinPool(
+                    f"pin {p}, {type(p)} was not in pin pool: {pin_pool}."
+                )
             pin_pool.remove(p)
     return pin_pool
 
 
 def shutdown() -> None:
     """Shutdown all devices, network interfaces, and reset the machine."""
-    log_record("Shutting down devices, wlan, and machine...")
     close_devices_closure()
     wlan_shutdown()
     reset()

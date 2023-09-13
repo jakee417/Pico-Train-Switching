@@ -8,14 +8,13 @@ from .connect import (
     nic_closure,
 )
 from .lib.microdot import Microdot, Request
-from .logging import log_dump, log_flush
+from .logging import log_dump, log_flush, log_record
 from .server_methods import (
     StatusMessage,
     change_pins,
     get_devices,
     get_profiles,
     load_json,
-    log_record,
     remove_json,
     reset_pins,
     toggle_pins,
@@ -27,7 +26,7 @@ from .server_methods import (
 app = Microdot()
 
 
-@app.before_request
+@app.after_request
 def server_log_request(request: Request):
     log_record(request.url)
 
