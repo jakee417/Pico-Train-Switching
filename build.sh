@@ -6,7 +6,6 @@ files=$(find src | grep "\.py")
 for file in $files
 do
     newfile=$(echo $file | sed "s+src/+bin/+" | sed "s+.py+.mpy+")
-    
     build_result=$(python3 -m mpy_cross $file -o $newfile 2>&1) 
     if [[ -n $build_result ]]
     then
