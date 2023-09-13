@@ -7,7 +7,7 @@ from .connect import (
     NetworkInfo,
     nic_closure,
 )
-from .lib.microdot import Microdot, Request
+from .lib.microdot import Microdot, Request, Response
 from .logging import log_dump, log_flush, log_record
 from .server_methods import (
     StatusMessage,
@@ -27,8 +27,8 @@ app = Microdot()
 
 
 @app.after_request
-def server_log_request(request: Request):
-    log_record(request.url)
+def server_log_request(request: Request, response: Response):
+    log_record(f"{request.url} - {response.status_code}")
 
 
 ######################################################################
