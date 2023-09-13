@@ -1,4 +1,5 @@
 from .ota import Config, RepoURL, OTAUpdate, RemoteConfig
+from .connect import _VERSION
 
 
 class RailYardConfig(Config):
@@ -11,11 +12,11 @@ class RailYardConfig(Config):
         "app/main.py",
         "app/microdot_server.py",
     ]
-    manifest: str = "version.json"
+    manifest: str = _VERSION
 
 
 class RailYardRemoteConfig(RemoteConfig):
-    manifest = "version.json"
+    manifest = _VERSION
 
     def __init__(self) -> None:
         super().__init__(

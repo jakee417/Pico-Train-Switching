@@ -8,7 +8,7 @@ import binascii
 import json
 
 
-_APP_VERSION = const("1.0")
+_VERSION: str = const("version.json")
 _MAX_WAIT: int = const(10)
 _AP_IP = const("192.168.4.1")
 _AP_SUBNET = const("255.255.255.0")
@@ -87,6 +87,19 @@ class NetworkInfo(object):
         return binascii.hexlify(mac, ":").decode("utf-8")
 
     @property
+    def version(self) -> str:
+        _version = "0.0.0.0"
+        try:
+            with open(_VERSION) as f:
+                content = list(set(json.load(f).values()))
+            # version is well defined when all code is the same version.
+            if len(content) == 1:
+                _version = content[0]
+        except OSError:
+            pass
+        return _version
+
+    @property
     def json(self) -> dict[str, str]:
         return {
             const("HOSTNAME"): self.hostname,
@@ -94,7 +107,7 @@ class NetworkInfo(object):
             const("MAC"): self.mac,
             const("CONNECTED"): str(self.connected),
             const("STATUS"): str(self.status),
-            const("VERSION"): _APP_VERSION,
+            const("VERSION"): self.version,
         }
 
     def __repr__(self) -> str:
