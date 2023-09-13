@@ -5,7 +5,7 @@ from collections import OrderedDict
 from micropython import const
 
 from .lib.picozero import pico_led
-from .log import log_record
+from .logging import log_record
 from .train_switch import CLS_MAP, BinaryDevice
 from .connect import wlan_shutdown
 

@@ -1,7 +1,7 @@
 from .connect import connect
 from .microdot_server import run as _run
 from .server_methods import post, shutdown
-from .log import log_flush, log_record
+from .logging import log_flush, log_record
 
 
 def run() -> None:

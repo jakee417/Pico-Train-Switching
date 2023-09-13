@@ -8,7 +8,7 @@ from .connect import (
     nic_closure,
 )
 from .lib.microdot import Microdot, Request
-from .log import log_dump, log_flush
+from .logging import log_dump, log_flush
 from .server_methods import (
     StatusMessage,
     change_pins,
