@@ -344,4 +344,4 @@ def ota_closure() -> None:
     global update_flag
     if update_flag:
         ota()
-        update_flag = False
+        reset()
