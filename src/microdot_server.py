@@ -20,7 +20,9 @@ from .server_methods import (
     toggle_pins,
     save_json,
     led_flash,
+    app_shutdown,
     app_reset,
+    app_update,
 )
 
 app = Microdot()
@@ -54,10 +56,26 @@ def server_network(_: Request) -> str:
     return dumps(NetworkInfo(nic_closure()).json)
 
 
+@app.get('/shutdown')
+def server_app_shutdown(request: Request):
+    app_shutdown()
+    request.app.shutdown()
+    return StatusMessage.SUCCESS
+
+
 @app.get("/reset")
 @led_flash
-def server_app_reset(_: Request) -> str:
+def server_app_reset(request: Request) -> str:
     app_reset()
+    request.app.shutdown()
+    return StatusMessage.SUCCESS
+
+
+@app.get("/update")
+@led_flash
+def server_app_update(request: Request):
+    app_update()
+    request.app.shutdown()
     return StatusMessage.SUCCESS
 
 

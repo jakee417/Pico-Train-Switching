@@ -1,4 +1,5 @@
 import os
+import gc
 import ujson
 from machine import reset, Timer
 from collections import OrderedDict
@@ -6,7 +7,7 @@ from micropython import const
 
 from .lib.picozero import pico_led
 from .train_switch import CLS_MAP, BinaryDevice
-from .connect import wlan_shutdown
+from .config import ota
 
 # Raspberry Pi Pico W RP2040 layout
 GPIO_PINS: set[int] = set(range(29))
@@ -200,11 +201,25 @@ def post(pins: str, device_type: str) -> dict[str, list[dict[str, object]]]:
         raise ValueError("Requested Device Type not found.")
 
 
+def app_shutdown() -> None:
+    shutdown()
+
+
 def app_reset() -> None:
+    shutdown()
     Timer(
         period=APP_RESET_WAIT_TIME * 1000,
         mode=Timer.ONE_SHOT,
-        callback=shutdown_closure,
+        callback=reset_closure,
+    )
+
+
+def app_update() -> None:
+    shutdown()
+    Timer(
+        period=APP_RESET_WAIT_TIME * 1000,
+        mode=Timer.ONE_SHOT,
+        callback=update_closure,
     )
 
 
@@ -250,10 +265,14 @@ def led_flash(func):
 
 def close_devices(devices: OrderedDict[str, BinaryDevice]) -> None:
     """Close all connections in a dictionary of devices."""
+    global pin_pool
     # close all pre existing connections
     for _, device in devices.items():
         device.close()
-    del devices  # garbage collect
+    del devices
+    # reset the pin pool
+    pin_pool = update_pin_pool(OrderedDict({}))
+    gc.collect()
 
 
 def close_devices_closure() -> None:
@@ -312,11 +331,13 @@ def update_pin_pool(devices: OrderedDict[str, BinaryDevice]) -> set[int]:
 
 
 def shutdown() -> None:
-    """Shutdown all devices, network interfaces, and reset the machine."""
+    """Shutdown all devices."""
     close_devices_closure()
-    wlan_shutdown()
+
+
+def reset_closure(timer: Timer) -> None:
     reset()
 
 
-def shutdown_closure(timer: Timer) -> None:
-    shutdown()
+def update_closure(time: Timer) -> None:
+    ota()
