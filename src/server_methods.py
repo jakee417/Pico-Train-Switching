@@ -220,7 +220,6 @@ def app_reset() -> None:
 
 def app_ota() -> None:
     global update_flag
-    shutdown()
     update_flag = True
 
 
@@ -344,4 +343,4 @@ def ota_closure() -> None:
     global update_flag
     if update_flag:
         ota()
-        reset()
+        app_reset()
