@@ -5,9 +5,10 @@ from machine import reset, Timer
 from collections import OrderedDict
 from micropython import const
 
+from .config import ota
 from .lib.picozero import pico_led
 from .train_switch import CLS_MAP, BinaryDevice
-from .config import ota
+
 
 # Raspberry Pi Pico W RP2040 layout
 GPIO_PINS: set[int] = set(range(29))
@@ -15,6 +16,9 @@ GPIO_PINS: set[int] = set(range(29))
 # container for holding our devices - load or initialize
 devices: OrderedDict[str, BinaryDevice] = OrderedDict({})
 pin_pool: set[int] = GPIO_PINS.copy()
+
+# Upon shutdown, this will enable a ota update.
+update_flag: bool = False
 
 _PROFILE_FOLDER = const("profiles")
 _PROFILE_PATH: str = const(f"./{_PROFILE_FOLDER}/")
@@ -214,13 +218,10 @@ def app_reset() -> None:
     )
 
 
-def app_update() -> None:
+def app_ota() -> None:
+    global update_flag
     shutdown()
-    Timer(
-        period=APP_RESET_WAIT_TIME * 1000,
-        mode=Timer.ONE_SHOT,
-        callback=update_closure,
-    )
+    update_flag = True
 
 
 ######################################################################
@@ -339,5 +340,8 @@ def reset_closure(timer: Timer) -> None:
     reset()
 
 
-def update_closure(time: Timer) -> None:
-    ota()
+def ota_closure() -> None:
+    global update_flag
+    if update_flag:
+        ota()
+        update_flag = False

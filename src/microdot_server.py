@@ -22,7 +22,8 @@ from .server_methods import (
     led_flash,
     app_shutdown,
     app_reset,
-    app_update,
+    app_ota,
+    ota_closure,
 )
 
 app = Microdot()
@@ -74,7 +75,7 @@ def server_app_reset(request: Request) -> str:
 @app.get("/update")
 @led_flash
 def server_app_update(request: Request):
-    app_update()
+    app_ota()
     request.app.shutdown()
     return StatusMessage.SUCCESS
 
@@ -200,3 +201,4 @@ def server_log_flush(_: Request):
 
 def run() -> None:
     app.run(host="0.0.0.0", port=80)
+    ota_closure()
