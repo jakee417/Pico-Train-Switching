@@ -7,10 +7,18 @@ class RailYardConfig(Config):
         user="jakee417", repo="Pico-Train-Switching", version="main"
     )
     files = [
-        "app/connect.py",
-        "app/logging.py",
-        "app/main.py",
-        "app/microdot_server.py",
+        "bin/lib/__init__.mpy",
+        "bin/lib/microdot.mpy",
+        "bin/lib/picozero.mpy",
+        "bin/__init__.mpy",
+        "bin/config.mpy",
+        "bin/connect.mpy",
+        "bin/logging.mpy",
+        "bin/main.mpy",
+        "bin/microdot_server.mpy",
+        "bin/ota.mpy",
+        "bin/server_methods.mpy",
+        "bin/train_switch.mpy",
     ]
     manifest: str = _VERSION
 

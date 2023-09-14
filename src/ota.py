@@ -47,8 +47,8 @@ class Config:
             "<file_name>": "<str(hash(file contents))>" or "<tag>",
             ...
         }
-        tag: Either a tag string or __hash__ if no tag is used.
-            Use a "<tag>" with `RemoteConfig` or "__hash__" with `Config`.
+        tag: Either a tag string or `"__hash__"` if no tag is used.
+            Use a "<tag>" with `RemoteConfig` or `"__hash__"` with `Config`.
             If using __hash__, the `str(hash(content))` is used as a basis
             of comparison.
     """
@@ -87,7 +87,7 @@ class RemoteConfig(Config):
                 Inside this directory, there must exist a file named
                 _REMOTE_VERSION = "version.json" with the following schema:
                 {
-                    "tag": "<commit, branch name, or tag>"
+                    "tag": "<commit, branch name, or tag>",
                     "files": [
                         "<file1>",
                         "<file2>",
@@ -117,11 +117,11 @@ class RemoteConfig(Config):
 
 
 class VersionInfo:
-    """A container for a filename, version, and manifest file.
+    """A container for a version and manifest file.
 
     Attributes:
         manifest: see `Config.manifest`.
-        content: json representation of the contents in manifest.
+        content: json representation of the contents in `manifest`.
     """
 
     manifest: str
@@ -158,6 +158,10 @@ class OTAUpdate:
     def __init__(self, config: Config) -> None:
         """Perform an OTA based upon a configuration.
 
+        Notes:
+            An `OTAUpdate` instance is compatible only with the initial config.
+            For subsequent updates (for other configs), instantiate a new `OTAUpdate`.
+
         Args:
             config: a configuration containing information needed to update.
         """
@@ -191,28 +195,28 @@ class OTAUpdate:
                 new_version=tag,
             )
         else:
-            print(file + " deferred.")
+            print(file + " deferred...")
 
     def _update(self, response, file: str, new_version: str) -> None:
         """Helper function to unpack a response and update a version."""
         if response.status_code == 200 and new_version != self.info.version(file=file):
-            write_to_file(file, response.content)
+            self.write_to_file(file, response.content)
             # Write the new version to flash memory.
             self.info.write_versions_to_file(versions={const(file): new_version})
-            print(file + " updated.")
+            print(file + " updated...")
         else:
-            print(file + " deferred.")
+            print(file + " deferred...")
 
-
-def write_to_file(file: str, content: str) -> None:
-    """Ensure a directory exists before writing contents to a file."""
-    _DELIM: str = const("/")
-    if file.find(_DELIM) != -1:
-        # Strip all but the last prefix
-        prefix = _DELIM.join(file.split(_DELIM)[:-1])
-        try:
-            os.mkdir(prefix)
-        except OSError:
-            pass
-    with open(file, "w") as f:
-        f.write(content)
+    @staticmethod
+    def write_to_file(file: str, content: str) -> None:
+        """Ensure a directory exists before writing contents to a file."""
+        _DELIM: str = const("/")
+        if file.find(_DELIM) != -1:
+            # Strip all but the last prefix (aka the directory).
+            prefix = _DELIM.join(file.split(_DELIM)[:-1])
+            try:
+                os.mkdir(prefix)
+            except OSError:
+                pass
+        with open(file, "w") as f:
+            f.write(content)
