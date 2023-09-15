@@ -6,7 +6,7 @@ from micropython import const
 
 
 ######################################################################
-# Config and Type Classes
+# Data Classes
 ######################################################################
 
 
@@ -35,8 +35,48 @@ class RepoURL:
         return f"{self._BASE}/{self.user}/{self.repo}/{self.version}/"
 
 
-class Config:
-    """Base config that provides a repo, files, and manifest for an ota update.
+class VersionInfo:
+    """A container for a version and manifest file.
+
+    Attributes:
+        manifest: see `Config.manifest`.
+        content: json representation of the contents in `manifest`.
+    """
+
+    _NO_VERSION: str = const("__NO_VERSION__")
+    manifest: str
+    content: dict[str, str] = dict()
+
+    def __init__(self, manifest: str) -> None:
+        self.manifest = manifest
+        # Load content from file.
+        if self.manifest in os.listdir():
+            with open(self.manifest) as f:
+                self.content = json.load(f)
+        # Or set to an empty dict().
+        else:
+            self.write_versions_to_file(versions=dict())
+
+    def write_versions_to_file(self, versions: dict[str, str]) -> None:
+        self.content.update(versions)
+        with open(self.manifest, "w") as f:
+            json.dump(self.content, f)
+
+    def version(self, file: str) -> str:
+        """Retrieve the active version for a file in the manifest."""
+        return self.content.get(file, self._NO_VERSION)
+
+
+######################################################################
+# Typed Configs
+######################################################################
+
+
+class BaseConfig:
+    """Base config that provides a repo, files, manifest, and tag for an OTAUpdate.
+
+    Notes:
+        Subclass `BaseConfig` to define configs specific to your project.
 
     Attributes:
         repo_url: "https://raw.githubusercontent.com/<username>/<repo_name>/<branch_name>/"
@@ -48,8 +88,8 @@ class Config:
             ...
         }
         tag: Either a tag string or `"__hash__"` if no tag is used.
-            Use a "<tag>" with `RemoteConfig` or `"__hash__"` with `Config`.
-            If using __hash__, the `str(hash(content))` is used as a basis
+            Use a `"<tag>"` with `RemoteConfig` or `"__hash__"` otherwise.
+            If using `"__hash__"`, the `str(hash(content))` is used as a basis
             of comparison.
     """
 
@@ -62,7 +102,7 @@ class Config:
         pass
 
 
-class TestConfig(Config):
+class TestConfig(BaseConfig):
     """Test config based upon https://github.com/kevinmcaleer/ota."""
 
     repo_url: RepoURL = RepoURL(
@@ -72,15 +112,15 @@ class TestConfig(Config):
     manifest: str = "version.json"
 
 
-class RemoteConfig(Config):
-    """A subclass that finds it's version and files dynamically."""
+class RemoteConfig(BaseConfig):
+    """A subclass that finds it's tag and files dynamically."""
 
     _REMOTE_VERSION: str = const("version.json")
     _TAG_KEY: str = const("tag")
     _FILES_KEY: str = const("files")
 
     def __init__(self, remote_url: RepoURL) -> None:
-        """Sets the repo_url and files dynamically based off a remote config.
+        """Sets the `tag`, `repo_url` and `files` dynamically based off a remote config.
 
         Args:
             remote_url: url pointing to a remote configuration on github.
@@ -99,15 +139,16 @@ class RemoteConfig(Config):
         if response.status_code == 200:
             remote_config = json.loads(response.content)
             if self._TAG_KEY in remote_config and self._FILES_KEY in remote_config:
+                # Resolve tags & files dynamically.
                 self.tag = remote_config[self._TAG_KEY]
+                self.files = remote_config[self._FILES_KEY]
+                # Set the `repo_url` based off this info.
                 self.repo_url = RepoURL(
                     user=remote_url.user,
                     repo=remote_url.repo,
                     # Now substitute in the tag dynamically.
                     version=self.tag,
                 )
-                # Resolve files dynamically.
-                self.files = remote_config[self._FILES_KEY]
             else:
                 raise KeyError(
                     f"{self._TAG_KEY} and {self._FILES_KEY} must be present."
@@ -116,50 +157,21 @@ class RemoteConfig(Config):
             raise NotImplementedError("Remote configuration was not found.")
 
 
-class VersionInfo:
-    """A container for a version and manifest file.
-
-    Attributes:
-        manifest: see `Config.manifest`.
-        content: json representation of the contents in `manifest`.
-    """
-
-    manifest: str
-    content: dict[str, str] = dict()
-    _NO_VERSION: str = const("__NO_VERSION__")
-
-    def __init__(self, manifest: str) -> None:
-        self.manifest = manifest
-        # Load content from file, or set to an empty dict().
-        if self.manifest in os.listdir():
-            with open(self.manifest) as f:
-                self.content = json.load(f)
-        else:
-            self.write_versions_to_file(versions=dict())
-
-    def write_versions_to_file(self, versions: dict[str, str]) -> None:
-        self.content.update(versions)
-        with open(self.manifest, "w") as f:
-            json.dump(self.content, f)
-
-    def version(self, file: str) -> str:
-        """Retrieve the active version for a file in the manifest."""
-        return self.content.get(file, self._NO_VERSION)
-
-
 ######################################################################
 # OTA Methods
 ######################################################################
 
 
 class OTAUpdate:
+    """Main class responsible for conducting OTAUpdates."""
+
     info: VersionInfo
 
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: BaseConfig) -> None:
         """Perform an OTA based upon a configuration.
 
         Notes:
-            An `OTAUpdate` instance is compatible only with the initial config.
+            An `OTAUpdate` instance is compatible only with the initial `config`.
             For subsequent updates (for other configs), instantiate a new `OTAUpdate`.
 
         Args:
@@ -178,7 +190,7 @@ class OTAUpdate:
     def update(self, repo_url: str, file: str, tag: str) -> None:
         """Set the latest code for a specific file from a remote repo."""
         # If using hashing, we determine the "tag" based off the hash of the response.
-        if tag == Config.tag:
+        if tag == BaseConfig.tag:
             # Get the latest code from the repo.
             response = urequests.get(repo_url + file)
             self._update(
@@ -201,7 +213,7 @@ class OTAUpdate:
         """Helper function to unpack a response and update a version."""
         if response.status_code == 200 and new_version != self.info.version(file=file):
             self.write_to_file(file, response.content)
-            # Write the new version to flash memory.
+            # Write the new version to "disk".
             self.info.write_versions_to_file(versions={const(file): new_version})
             print(file + " updated...")
         else:

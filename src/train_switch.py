@@ -6,22 +6,23 @@ from micropython import const
 from .lib.picozero import DigitalOutputDevice, AngularServo
 
 
-BLINK: float = 0.25  # default time to wait between blinking
-SAFE_SHUTDOWN: int = 4  # how long to wait before shutting down disconnect
-
-
 class BinaryDevice(object):
+    # default time to wait between blinking
+    _BLINK: float = const(0.1)
+    # how long to wait before shutting down disconnect
+    _SAFE_SHUTDOWN: int = const(4)
+
+    # Public attributes
     required_pins: int = -1
-    __pin: tuple[int, ...] = tuple()
-    # Optional[str]
-    __state: str = None  # type: ignore
     on_state: str = ""
     off_state: str = ""
 
-    def __init__(
-        self,
-        pin: tuple[int, ...],
-    ) -> None:
+    # Private attributes
+    __pin: tuple[int, ...] = tuple()
+    # Optional[str]
+    __state: str = None  # type: ignore
+
+    def __init__(self, pin: tuple[int, ...]) -> None:
         """Base class for any device with two states, on_state & off_state.
 
         Notes:
@@ -311,12 +312,12 @@ class RelayTrainSwitch(BinaryDevice):
         if action == RelayTrainSwitch.off_state:
             self.br_relay.off()
             self.br_relay.on()
-            time.sleep(BLINK)
+            time.sleep(self._BLINK)
             self.br_relay.off()
         elif action == RelayTrainSwitch.on_state:
             self.yg_relay.off()
             self.yg_relay.on()
-            time.sleep(BLINK)
+            time.sleep(self._BLINK)
             self.yg_relay.off()
         elif action is None:
             pass
@@ -416,7 +417,7 @@ class Disconnect(OnOff):
             # Wait for 10 seconds, then turn off.
             self.safe_stop = Timer(
                 # period is in milliseconds.
-                period=SAFE_SHUTDOWN * 1000,
+                period=self._SAFE_SHUTDOWN * 1000,
                 mode=Timer.ONE_SHOT,
                 callback=self.safe_close_relay,
             )

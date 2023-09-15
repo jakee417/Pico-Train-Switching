@@ -1,8 +1,8 @@
-from .ota import Config, RepoURL, OTAUpdate, RemoteConfig
-from .connect import _VERSION
+from .ota import BaseConfig, RepoURL, OTAUpdate, RemoteConfig
+from .connect import Connect
 
 
-class RailYardConfig(Config):
+class RailYardConfig(BaseConfig):
     repo_url: RepoURL = RepoURL(
         user="jakee417", repo="Pico-Train-Switching", version="main"
     )
@@ -20,11 +20,11 @@ class RailYardConfig(Config):
         "bin/server_methods.mpy",
         "bin/train_switch.mpy",
     ]
-    manifest: str = _VERSION
+    manifest: str = Connect._VERSION
 
 
 class RailYardRemoteConfig(RemoteConfig):
-    manifest = _VERSION
+    manifest = Connect._VERSION
 
     def __init__(self) -> None:
         super().__init__(
@@ -35,13 +35,12 @@ class RailYardRemoteConfig(RemoteConfig):
 
 
 def ota():
+    # Depending on where this code lives, it can break subsequent workflows.
+    # If we have a bad config, silently fail so that our devices
+    # out in the wild do not start failing mysteriously.
     try:
         OTAUpdate(config=RailYardRemoteConfig())
-    # If we have a bad config, lets silently fail so that our devices
-    # out in the wild do not start failing mysteriously.
-    except KeyError:
-        pass
-    except NotImplementedError:
+    except (KeyError, NotImplementedError, Exception):
         pass
 
 
