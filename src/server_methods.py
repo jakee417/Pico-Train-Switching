@@ -354,7 +354,12 @@ def reset_closure(timer: Timer) -> None:
     reset()
 
 
+@led_flash
+def _ota_closure() -> None:
+    ota()
+
+
 def ota_closure() -> None:
     if ServerMethods.update_flag:
-        ota()
+        _ota_closure()
         app_reset()
