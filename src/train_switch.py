@@ -22,7 +22,7 @@ class BinaryDevice(object):
     # Optional[str]
     __state: str = None  # type: ignore
 
-    def __init__(self, pin: tuple[int, ...]) -> None:
+    def __init__(self, pin: tuple[int, ...], verbose: bool = False) -> None:
         """Base class for any device with two states, on_state & off_state.
 
         Notes:
@@ -41,6 +41,7 @@ class BinaryDevice(object):
         self.__name__ = "Base Train Switch"
         pin = tuple(sorted(pin))  # always sort the pins
         self.__pin = pin
+        self.verbose = verbose
 
     @property
     def name(self) -> str:
@@ -106,12 +107,13 @@ class BinaryDevice(object):
 
     def log(self, initial_state: str, action: str, update: str) -> None:
         """Logs update message"""
-        # print(
-        #     f"{self}: \n"
-        #     + f"++++ initial state: {initial_state} \n"
-        #     + f"++++ action: {action} \n"
-        #     + f"++++ update: {update}"
-        # )
+        if self.verbose:
+            print(
+                f"{self}: \n"
+                + f"++++ initial state: {initial_state} \n"
+                + f"++++ action: {action} \n"
+                + f"++++ update: {update}"
+            )
 
     # @abstractmethod
     def _action(self, action: str) -> str:
