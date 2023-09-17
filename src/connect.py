@@ -12,13 +12,6 @@ class Connect:
     """Singleton for connect attributes/constants."""
 
     _VERSION: str = const("version.json")
-    _MAX_WAIT: int = const(10)
-    _AP_IP = const("192.168.4.1")
-    _AP_SUBNET = const("255.255.255.0")
-    _AP_GATEWAY = const("192.168.4.1")
-    _AP_DNS = const("0.0.0.0")
-    _AP_PASSWORD = const("getready2switchtrains")
-
     _CREDENTIAL_FOLDER = const("secrets")
     _CREDENTIAL_PATH = f"./{_CREDENTIAL_FOLDER}/secrets.json"
     if _CREDENTIAL_FOLDER not in os.listdir():
@@ -191,21 +184,28 @@ def connect() -> None:
 
 
 def connect_as_access_point() -> None:
+    _AP_IP = const("192.168.4.1")
+    _AP_SUBNET = const("255.255.255.0")
+    _AP_GATEWAY = const("192.168.4.1")
+    _AP_DNS = const("0.0.0.0")
+    _AP_PASSWORD = const("getready2switchtrains")
+
     Connect.ap.config(
         ssid=NetworkInfo(Connect.ap).hostname,
-        password=Connect._AP_PASSWORD,
+        password=_AP_PASSWORD,
     )
     Connect.ap.active(True)
     time.sleep(0.1)
     # NOTE: These are the defaults for rp2 port of micropython.
     #   It doesn't seem possible to change these without side-effects.
-    Connect.ap.ifconfig(
-        (Connect._AP_IP, Connect._AP_SUBNET, Connect._AP_GATEWAY, Connect._AP_DNS)
-    )
+    Connect.ap.ifconfig((_AP_IP, _AP_SUBNET, _AP_GATEWAY, _AP_DNS))
     time.sleep(0.1)
 
 
 def connect_as_station() -> None:
+    _MAX_WAIT: int = const(10)
+
+    # Setup sta NIC attribute.
     Connect.sta.config(ssid=NetworkInfo(Connect.ap).hostname)
     Connect.sta.active(True)
 
@@ -216,7 +216,7 @@ def connect_as_station() -> None:
 
     if ssid is not None and password is not None:
         Connect.sta.connect(ssid, password)
-        wait = Connect._MAX_WAIT
+        wait = _MAX_WAIT
         while wait > 0:
             if Connect.sta.status() < 0 or Connect.sta.status() >= 3:
                 break
