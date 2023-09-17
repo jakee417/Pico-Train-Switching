@@ -354,12 +354,10 @@ def reset_closure(timer: Timer) -> None:
     reset()
 
 
-@led_flash
-def _ota_closure() -> None:
-    ota()
-
-
 def ota_closure() -> None:
     if ServerMethods.update_flag:
-        _ota_closure()
+        # Blink to the user letting them know the device is updating.
+        pico_led.on()
+        ota()
+        pico_led.off()
         app_reset()

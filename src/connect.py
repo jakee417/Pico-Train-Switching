@@ -87,7 +87,7 @@ class NetworkInfo(object):
 
     @property
     def version(self) -> str:
-        _version = "0.0.0.0"
+        _version = "Firmware Update Needed"
         try:
             with open(Connect._VERSION) as f:
                 content = list(set(json.load(f).values()))
