@@ -4,7 +4,6 @@ NC='\033[0m'
 BLUE='\033[0;34m'
 BGreen='\033[1;32m'
 ADAFRUIT=adafruit-ampy
-VENV=".venv/bin/activate"
 
 files=$(find bin | grep .mpy)
 total="$(echo $files | wc -w | tr -d ' ')"
@@ -14,14 +13,7 @@ echo "----------------------------------"
 
 echo -e "${BLUE}Running copy from $(pwd)${NC}"
 
-venv=$(source $VENV)
-if [[ -n $venv ]]
-then
-    echo -e "${RED}Could not find $VENV. Please cd to Pico-Train-Switching.${NC}"
-    exit 1
-else
-    echo -e "${BLUE}Using $VENV's virtual environment...${NC}" 
-fi
+# Check to see if we have access to python3.
 python=$(which python3)
 if [[ -n $python ]]
 then
@@ -30,6 +22,8 @@ else
     echo -e "${RED}python3 not installed. Please install python3 first.${NC}"
     exit 1
 fi
+
+# Check to see if adafruit-ampy is installed.
 installed=$(pip3 freeze | grep $ADAFRUIT)
 if [[ $(echo $installed | wc -w) -eq 0 ]]
 then
@@ -38,6 +32,7 @@ then
     pip3 install $ADAFRUIT
     echo "----------------------------------"
 fi
+
 # Raspberry Pi Pico serial port (update with your Pico's serial port)
 SERIAL_PORT="$(ls /dev/tty.usbmodem*)"
 
