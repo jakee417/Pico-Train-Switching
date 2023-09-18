@@ -83,7 +83,7 @@ def parse_args() -> argparse.Namespace:
     return args
 
 
-def update_firmware(args: argparse.Namespace) -> None:
+def update_firmware(args: argparse.Namespace) -> bool:
     """Update a pico's firmware"""
     print_color("Pico detected, attempting to write firmware")
     print_color("DO NOT CTRL+C!", color=TextColors.RED)
@@ -95,17 +95,20 @@ def update_firmware(args: argparse.Namespace) -> None:
         copied_path = os.path.join(args.volume_path, file_name)
         with open(copied_path, "rb") as f:
             os.fsync(f.fileno())
+        return True
     except PermissionError:
         print_color(
             "Permission Error: Unable to copy firmware to the Pico."
             + " Please reconnect the Pico and try again.",
             color=TextColors.RED,
         )
+        return False
     except FileNotFoundError:
         print_color(
             "Error: UF2 file not found. Please check the file location.",
             color=TextColors.RED,
         )
+        return False
     except Exception as e:
         expected_file_error = (
             f"[Errno 2] No such file or directory: '{args.volume_path}'"
@@ -118,6 +121,7 @@ def update_firmware(args: argparse.Namespace) -> None:
             )
         else:
             print_color(f"Unknown Error: {e}", color=TextColors.RED)
+        return False
 
 
 def copy_build_files() -> None:
@@ -153,10 +157,10 @@ def run(args: argparse.Namespace) -> None:
             copy_build_files()
             # Check if the RP2 drive is available
             if os.path.exists(args.volume_path):
-                update_firmware(args=args)
-                copy_build_files()
-                if args.applescript:
-                    execute_applescript(applescript_code)
+                if update_firmware(args=args):
+                    if args.applescript:
+                        execute_applescript(applescript_code)
+                    copy_build_files()
                 print_color("SAFE TO CTRL+C!", color=TextColors.GREEN)
             breadcrumb()
     except KeyboardInterrupt:
