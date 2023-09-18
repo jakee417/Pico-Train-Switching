@@ -6,3 +6,4 @@
 .trunk/*
 .micropico
 Pico-Train-Switching.code-workspace
+.venv/*

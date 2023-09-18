@@ -5,37 +5,19 @@ BLUE='\033[0;34m'
 BGreen='\033[1;32m'
 ADAFRUIT=adafruit-ampy
 
-files=$(find bin | grep .mpy)
-total="$(echo $files | wc -w | tr -d ' ')"
-echo "----------------------------------"
-echo "Copying [$total] files..."
-echo "----------------------------------"
-
-echo -e "${BLUE}Running copy from $(pwd)${NC}"
-
-# Check to see if we have access to python3.
-python=$(which python3)
-if [[ -n $python ]]
-then
-    echo -e "${BLUE}Using $python to copy code...${NC}" 
-else
-    echo -e "${RED}python3 not installed. Please install python3 first.${NC}"
-    exit 1
-fi
-
 # Check to see if adafruit-ampy is installed.
 installed=$(pip3 freeze | grep $ADAFRUIT)
 if [[ $(echo $installed | wc -w) -eq 0 ]]
 then
-    echo "----------------------------------"
-    echo "$ADAFRUIT not installed, installing now..."
+    echo -e "${BLUE}$ADAFRUIT not installed, installing now...${NC}"
     pip3 install $ADAFRUIT
-    echo "----------------------------------"
 fi
 
-# Raspberry Pi Pico serial port (update with your Pico's serial port)
+# Raspberry Pi Pico serial port.
 SERIAL_PORT="$(ls /dev/tty.usbmodem*)"
-
+files=$(find bin | grep .mpy)
+total="$(echo $files | wc -w | tr -d ' ')"
+echo -e "${BLUE}Copying [$total] files...${NC}"
 i=0
 j=0
 _=$(ampy --port "$SERIAL_PORT" mkdir bin 2>&1)
@@ -57,7 +39,7 @@ done
 echo -e "${BGreen}----------------------------------"
 echo "Copy Report:"
 echo "----------------------------------"
-echo "[$i / $total] file copies ✅"
+echo "[$i / $total] file copies ✅ "
 echo "[$j / $total] file errors ❌"
 echo -e "----------------------------------${NC}"
 exit 0
