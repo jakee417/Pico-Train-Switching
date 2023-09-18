@@ -7,27 +7,25 @@ ADAFRUIT=adafruit-ampy
 
 # Check to see if adafruit-ampy is installed.
 installed=$(pip3 freeze | grep $ADAFRUIT)
-if [[ $(echo $installed | wc -w) -eq 0 ]]
-then
-    echo -e "${BLUE}$ADAFRUIT not installed, installing now...${NC}"
+if [[ $(echo $installed | wc -w) -eq 0 ]]; then
+    echo -e "${BLUE}$ADAFRUIT not installed, installing now${NC}"
     pip3 install $ADAFRUIT
 fi
 
-# Raspberry Pi Pico serial port.
+# Start the file copy to a serial connection.
 SERIAL_PORT="$(ls /dev/tty.usbmodem*)"
 files=$(find bin | grep .mpy)
 total="$(echo $files | wc -w | tr -d ' ')"
-echo -e "${BLUE}Copying [$total] files...${NC}"
-i=0
-j=0
+echo -e "${BLUE}Copying [$total] files${NC}"
+# Make sure directories already exist.
 _=$(ampy --port "$SERIAL_PORT" mkdir bin 2>&1)
 _=$(ampy --port "$SERIAL_PORT" mkdir bin/lib 2>&1)
 # Use ampy to upload files from the source directory to the Pico
-for file in $files
-do
+i=0
+j=0
+for file in $files; do
 copy_result=$(ampy --port "$SERIAL_PORT" put "$file" "$file" 2>&1)
-if [[ -n $copy_result ]]
-then
+if [[ -n $copy_result ]]; then
     echo -e "🔨 ${RED}$file ❌"
     echo -e $copy_result${NC}
     ((j=j+1))

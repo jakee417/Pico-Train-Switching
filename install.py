@@ -25,17 +25,13 @@ def print_color(text: str, color: str = TextColors.BLUE, end: bool = True):
         print(_text, end="", flush=True)
 
 
-def breadcrumb(n: int = 5) -> None:
+def breadcrumb(n: int = 5, color: str = TextColors.BLUE) -> None:
     """Helper function to visually wait for an event."""
     for _ in range(n):
         time.sleep(1)
-        print_color(".", end=False)
+        print_color(".", color=color, end=False)
     print("")
 
-
-# If the applescript stops working or you don't want the function,
-# set enableapplescript to False
-enableapplescript = True
 
 applescript_code = """tell application "System Events"
     try
@@ -70,7 +66,13 @@ def parse_args() -> argparse.Namespace:
         default="/Volumes/RPI-RP2",
         help="Path to the volume (optional)",
     )
-
+    parser.add_argument(
+        "-a",
+        "--applescript",
+        type=bool,
+        default=True,
+        help="Whether to auto-dismiss 'Disk Not Ejected Properly' warnings",
+    )
     # Parse the command-line arguments
     args = parser.parse_args()
 
@@ -83,7 +85,7 @@ def parse_args() -> argparse.Namespace:
 
 def update_firmware(args: argparse.Namespace) -> None:
     """Update a pico's firmware"""
-    print_color("Pico detected, attempting to write firmware...")
+    print_color("Pico detected, attempting to write firmware")
     print_color("DO NOT CTRL+C!", color=TextColors.RED)
     try:
         # Copy the UF2 file to the RP2 drive
@@ -94,9 +96,10 @@ def update_firmware(args: argparse.Namespace) -> None:
         with open(copied_path, "rb") as f:
             os.fsync(f.fileno())
     except PermissionError:
-        print(
+        print_color(
             "Permission Error: Unable to copy firmware to the Pico."
-            + " Please reconnect the Pico and try again."
+            + " Please reconnect the Pico and try again.",
+            color=TextColors.RED,
         )
     except FileNotFoundError:
         print_color(
@@ -107,8 +110,7 @@ def update_firmware(args: argparse.Namespace) -> None:
         expected_file_error = (
             f"[Errno 2] No such file or directory: '{args.volume_path}'"
         )
-        file_error = str(e) == expected_file_error
-        if file_error:
+        if str(e) == expected_file_error:
             print_color(
                 "Error: Volume path '{}' not found.".format(args.volume_path)
                 + " Please check the volume path.",
@@ -119,14 +121,17 @@ def update_firmware(args: argparse.Namespace) -> None:
 
 
 def copy_build_files() -> None:
+    _color = TextColors.CYAN
     _cmd = ["ls", "/dev/tty.usbmodem*"]
-    print_color(f"Watching for serial: {_cmd[-1]}...")
+    print_color(f"Watching for serial: {_cmd[-1]}", color=_color)
     while True:
         search = subprocess.run(_cmd, capture_output=True)
         file_results = search.stdout.decode().strip().split("\n")
         if search.returncode == 0:
             if len(file_results) == 1:
-                print_color("Serial connection detected, copying files...")
+                print_color(
+                    "Serial connection detected, copying files", color=_color
+                )
                 print_color("DO NOT CTRL+C!", color=TextColors.RED)
                 subprocess.run(["sh", "copy.sh"])
             else:
@@ -137,27 +142,29 @@ def copy_build_files() -> None:
             return
         else:
             print_color(search.stderr.decode().strip(), color=TextColors.RED)
-        breadcrumb()
+        breadcrumb(color=_color)
 
 
 def run(args: argparse.Namespace) -> None:
     """Main event loop listening for mounted drives and serial connections."""
-    print_color(f"Watching for volume: {args.volume_path}...")
+    print_color(f"Watching for volume: {args.volume_path}")
     try:
         while True:
+            copy_build_files()
             # Check if the RP2 drive is available
             if os.path.exists(args.volume_path):
                 update_firmware(args=args)
                 copy_build_files()
-            if enableapplescript:
-                execute_applescript(applescript_code)
+                if args.applescript:
+                    execute_applescript(applescript_code)
+                print_color("SAFE TO CTRL+C!", color=TextColors.GREEN)
             breadcrumb()
     except KeyboardInterrupt:
         print("")
         sys.exit(0)
 
 
-if __name__ == "__main__":
+def print_welcome_message() -> None:
     print("----------------------------------")
     print_color("Press CTRL+C to exit")
     print_color(
@@ -165,4 +172,8 @@ if __name__ == "__main__":
         color=TextColors.RED,
     )
     print("----------------------------------")
+
+
+if __name__ == "__main__":
+    print_welcome_message()
     run(args=parse_args())
