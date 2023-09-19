@@ -84,7 +84,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def update_firmware(args: argparse.Namespace) -> bool:
-    """Update a pico's firmware"""
+    """Update a pico's firmware."""
     print_color("Pico detected, attempting to write firmware")
     print_color("DO NOT CTRL+C!", color=TextColors.RED)
     try:
@@ -125,6 +125,7 @@ def update_firmware(args: argparse.Namespace) -> bool:
 
 
 def copy_build_files() -> None:
+    """Copy a build directory."""
     _color = TextColors.CYAN
     _cmd = ["ls", "/dev/tty.usbmodem*"]
     print_color(f"Watching for serial: {_cmd[-1]}", color=_color)
@@ -154,7 +155,6 @@ def run(args: argparse.Namespace) -> None:
     print_color(f"Watching for volume: {args.volume_path}")
     try:
         while True:
-            copy_build_files()
             # Check if the RP2 drive is available
             if os.path.exists(args.volume_path):
                 if update_firmware(args=args):
