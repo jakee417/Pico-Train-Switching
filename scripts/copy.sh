@@ -13,18 +13,24 @@ if [[ $(echo $installed | wc -w) -eq 0 ]]; then
 fi
 
 # Start the file copy to a serial connection.
-SERIAL_PORT="$(ls /dev/tty.usbmodem*)"
+export AMPY_PORT="$(ls /dev/tty.usbmodem*)"
+
+echo -e "${BLUE}🗑️  Resetting boards build files${NC}"
+# Clear directories on the board
+_=$(ampy rmdir bin 2>&1)
+_=$(ampy rm version.json 2>&1)
+# Make sure directories already exist.
+_=$(ampy mkdir bin 2>&1)
+_=$(ampy mkdir bin/lib 2>&1)
+
 files=$(find bin | grep .mpy)
 total="$(echo $files | wc -w | tr -d ' ')"
 echo -e "${BLUE}Copying [$total] files${NC}"
-# Make sure directories already exist.
-_=$(ampy --port "$SERIAL_PORT" mkdir bin 2>&1)
-_=$(ampy --port "$SERIAL_PORT" mkdir bin/lib 2>&1)
 # Use ampy to upload files from the source directory to the Pico
 i=0
 j=0
 for file in $files; do
-copy_result=$(ampy --port "$SERIAL_PORT" put "$file" "$file" 2>&1)
+copy_result=$(ampy put "$file" "$file" 2>&1)
 if [[ -n $copy_result ]]; then
     echo -e "🔨 ${RED}$file ❌"
     echo -e $copy_result${NC}

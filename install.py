@@ -143,7 +143,7 @@ def copy_build_files() -> None:
             print_color("Serial connection detected, copying files", color=_color)
             print_color("DO NOT CTRL+C!", color=TextColors.RED)
             try:
-                return_code = subprocess.run(["sh", "copy.sh"], check=True).returncode
+                return_code = subprocess.run(["sh", "scripts/copy.sh"], check=True).returncode
             except subprocess.CalledProcessError as err:
                 return_code = err.returncode
             if return_code == 0:
