@@ -1,6 +1,7 @@
 {
-    "tag": "test-24",
+    "tag": "test-25",
     "files": [
+        "main.py",
         "bin/lib/__init__.mpy",
         "bin/lib/microdot.mpy",
         "bin/lib/picozero.mpy",

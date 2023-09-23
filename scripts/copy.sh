@@ -15,15 +15,16 @@ fi
 # Start the file copy to a serial connection.
 export AMPY_PORT="$(ls /dev/tty.usbmodem*)"
 
-echo -e "${BLUE}🗑️  Resetting boards build files${NC}"
+echo -e "${BLUE}🗑️  Reset build files${NC}"
 # Clear directories on the board
-_=$(ampy rmdir bin 2>&1)
-_=$(ampy rm version.json 2>&1)
+_=$(ampy rmdir / 2>&1)
 # Make sure directories already exist.
 _=$(ampy mkdir bin 2>&1)
 _=$(ampy mkdir bin/lib 2>&1)
 
 files=$(find bin | grep .mpy)
+# Add the main.py to autoboot the API
+files=$(echo $files "main.py")
 total="$(echo $files | wc -w | tr -d ' ')"
 echo -e "${BLUE}Copying [$total] files${NC}"
 # Use ampy to upload files from the source directory to the Pico
@@ -40,6 +41,7 @@ else
     ((i=i+1))
 fi
 done
+
 echo -e "${BGreen}----------------------------------"
 echo "Copy Report:"
 echo "----------------------------------"
