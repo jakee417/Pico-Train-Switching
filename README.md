@@ -85,11 +85,11 @@ MicroPython REST API hosted from a [`Raspberry Pi Pico W`](https://www.raspberry
 <!-- GETTING STARTED -->
 ## Getting Started
 
-There are some `macOS` prerequisites before installing the firmware and build files on your `Raspberry Pi Pico W`.
+There are some `macOS` prerequisites before installing the firmware and build files on your `Raspberry Pi Pico W`. Once these are completed, you can skip straight to <a href="#installation">Installation</a>.
 
 ### Prerequisites
 
-#### [`Python`](https://www.python.org/) is a requirement to flash the included firmware (`firmware/main.uf2`) and copy the build files to the `Raspberry Pi Pico W`. Install [`Python`](https://www.python.org/) with [homebrew](https://brew.sh/#install) by following [these steps](https://docs.python-guide.org/starting/install3/osx/).
+#### Install [homebrew](https://brew.sh/#install) & [`Python`](https://www.python.org/)
 
 Install `homebrew`:
 * ```sh
@@ -101,13 +101,13 @@ Install `Python`:
   brew install python
   ```
 
-Test your installation by running (from the terminal):
+Test your installation by running:
 * ```sh
   which python3
   ```
 You should see something like: `/usr/local/bin/python3`
 
-#### Next we need to install [`git`](https://git-scm.com/download/mac) to download the source files required by each installation.
+#### Install [`git`](https://git-scm.com/download/mac) & download repo
 
 Install `git`:
 * ```sh
@@ -122,18 +122,16 @@ Clone the repo:
 ### Installation
 Installing the firmware and build files:
 
-1. Set the working directory to the repo you cloned in <a href="#prerequisites">Prerequisites</a>:
+1. Run the installation script
    ```sh
-   cd .../Pico-Train-Switching/
+   python3 Pico-Train-Switching/install.py firmware/main.uf2
    ```
 
-2. Run the installation script
-   ```sh
-   python3 install.py firmware/main.uf2
-   ```
+2. Connect your `Raspberry Pi Pico W` to a usb port in [BOOTSEL mode](https://projects.raspberrypi.org/en/projects/getting-started-with-the-pico/3) 
+
+**⚠️WARNING⚠️** Ensure your `Raspberry Pi Pico W` is the only connected usb device when following step 2.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 
 
 <!-- USAGE EXAMPLES -->
