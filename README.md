@@ -127,7 +127,8 @@ Installing the firmware and build files:
    python3 Pico-Train-Switching/install.py firmware/main.uf2
    ```
 
-**⚠️WARNING⚠️** Ensure your `Raspberry Pi Pico W` is the only connected usb device before completing the next step.
+> [!WARNING]  
+> Ensure your `Raspberry Pi Pico W` is the only connected usb device before completing the next step.
 
 2. Connect your `Raspberry Pi Pico W` to a usb port in [BOOTSEL mode](https://projects.raspberrypi.org/en/projects/getting-started-with-the-pico/3) 
 
