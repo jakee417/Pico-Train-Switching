@@ -1,8 +1,9 @@
 import os
 import time
 import shutil
-import subprocess
+import glob
 import sys
+import subprocess
 import argparse
 
 
@@ -73,6 +74,13 @@ def parse_args() -> argparse.Namespace:
         default=True,
         help="Whether to auto-dismiss 'Disk Not Ejected Properly' warnings",
     )
+    parser.add_argument(
+        "-c",
+        "--copy",
+        type=bool,
+        default=True,
+        help="Whether to copy this repo's /bin/* files to the device",
+    )
     # Parse the command-line arguments
     args = parser.parse_args()
 
@@ -127,26 +135,29 @@ def update_firmware(args: argparse.Namespace) -> bool:
 def copy_build_files() -> None:
     """Copy a build directory."""
     _color = TextColors.CYAN
-    _cmd = ["ls", "/dev/tty.usbmodem*"]
-    print_color(f"Watching for serial: {_cmd[-1]}", color=_color)
+    _cmd = "/dev/tty.usbmodem*"
+    print_color(f"Watching for serial: {_cmd}", color=_color)
     while True:
-        search = subprocess.run(_cmd, capture_output=True)
-        file_results = search.stdout.decode().strip().split("\n")
-        if search.returncode == 0:
-            if len(file_results) == 1:
-                print_color(
-                    "Serial connection detected, copying files", color=_color
-                )
-                print_color("DO NOT CTRL+C!", color=TextColors.RED)
-                subprocess.run(["sh", "copy.sh"])
+        search = glob.glob(_cmd)
+        if len(search) == 1:
+            print_color("Serial connection detected, copying files", color=_color)
+            print_color("DO NOT CTRL+C!", color=TextColors.RED)
+            try:
+                return_code = subprocess.run(["sh", "copy.sh"], check=True).returncode
+            except subprocess.CalledProcessError as err:
+                return_code = err.returncode
+            if return_code == 0:
+                return
             else:
                 print_color(
-                    "Serial connection was not unique, could not copy files.",
+                    f"Copy was not successfuly, searching for serial: {_cmd}",
                     color=TextColors.RED,
                 )
-            return
         else:
-            print_color(search.stderr.decode().strip(), color=TextColors.RED)
+            print_color(
+                "Serial connection was not unique, ensure the device is the only usb modem",
+                color=TextColors.RED,
+            )
         breadcrumb(color=_color)
 
 
@@ -160,7 +171,10 @@ def run(args: argparse.Namespace) -> None:
                 if update_firmware(args=args):
                     if args.applescript:
                         execute_applescript(applescript_code)
-                    copy_build_files()
+                    if args.copy:
+                        # Wait a bit to let the usbmodem attach.
+                        time.sleep(1.0)
+                        copy_build_files()
                 print_color("SAFE TO CTRL+C!", color=TextColors.GREEN)
             breadcrumb()
     except KeyboardInterrupt:
