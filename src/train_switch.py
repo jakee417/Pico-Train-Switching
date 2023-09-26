@@ -3,7 +3,7 @@ import time
 from machine import Timer
 from micropython import const
 
-from .lib.picozero import DigitalOutputDevice, AngularServo
+from .lib.picozero import DigitalOutputDevice, AngularServo, ContinousServo
 
 
 class BinaryDevice(object):
@@ -53,6 +53,9 @@ class BinaryDevice(object):
         """Returns the pin number(s)."""
         return self.__pin
 
+    def __repr__(self):
+        return f"{self.name} @ Pin : {self.pin}"
+
     @property
     def pin_list(self) -> list[int]:
         """Returns a list of used pin(s) i.e. [2, 4]."""
@@ -82,13 +85,9 @@ class BinaryDevice(object):
         self.custom_state_setter(state)
         self.__state = state
 
-    # @abstractmethod
     def custom_state_setter(self, state: str) -> None:
         """Custom action upon setting the state."""
-        raise NotImplementedError
-
-    def __repr__(self):
-        return f"{self.name} @ Pin : {self.pin}"
+        raise NotImplementedError("Implement this method.")
 
     def to_json(self) -> dict[str, object]:
         """Converts an object to a seralized representation.
@@ -115,12 +114,36 @@ class BinaryDevice(object):
                 + f"++++ update: {update}"
             )
 
-    # @abstractmethod
     def _action(self, action: str) -> str:
-        raise NotImplementedError
+        """Subclass's subaction on an action.
+
+        Args:
+            action: One of either `self.on_state` or `self.off_state`.
+
+        Returns:
+            Serialized representation of the action result.
+        """
+        raise NotImplementedError("Implement this method.")
 
     def action(self, action: str) -> None:
-        """Complete an action on a train switch.
+        """Complete an action.
+
+        Args:
+            action: One of either `self.on_state` or `self.off_state`.
+        """
+        raise NotImplementedError("Implement this method.")
+
+    def __del__(self) -> None:
+        raise NotImplementedError("Implement this method.")
+
+    def close(self) -> None:
+        """Close a connection with a switch."""
+        self.__del__()
+
+
+class StatefulBinaryDevice(BinaryDevice):
+    def action(self, action: str) -> None:
+        """Complete an action on the state.
 
         If an ordered action is the same as the previous state, then do nothing.
         Otherwise, perform the action.
@@ -140,16 +163,25 @@ class BinaryDevice(object):
                 update=update,
             )
 
-    # @abstractmethod
-    def __del__(self) -> None:
-        raise NotImplementedError
 
-    def close(self) -> None:
-        """Close a connection with a switch."""
-        self.__del__()
+class StatelessBinaryDevice(BinaryDevice):
+    def action(self, action: str) -> None:
+        """Complete an action, irregardless of state.
+
+        Args:
+            action: One of either `self.on_state` or `self.off_state`.
+        """
+        initial_state = self.state
+        self.state = action
+        update = self._action(action)
+        self.log(
+            initial_state=initial_state,
+            action=action,
+            update=update,
+        )
 
 
-class EmptySwitch(BinaryDevice):
+class EmptySwitch(StatefulBinaryDevice):
     required_pins = 2
     on_state = None  # type: ignore
     off_state = None  # type: ignore
@@ -182,7 +214,7 @@ class ServoAngle(object):
     MAX_ANGLE: int = 80
 
 
-class ServoTrainSwitch(BinaryDevice):
+class ServoTrainSwitch(StatefulBinaryDevice):
     required_pins = 1
     on_state = "straight"
     off_state = "turn"
@@ -271,7 +303,71 @@ class DoubleServoTrainSwitch(ServoTrainSwitch):
         self.__name__ = "Double Servo Train Switch"
 
 
-class RelayTrainSwitch(BinaryDevice):
+class ContinuousServoMotor(StatelessBinaryDevice):
+    required_pins = 1
+    on_state = "next"
+    off_state = "last"
+
+    t: float = 0.3
+    speed: float = 0.2
+
+    # Optional[float]
+    def __init__(self, initial_value: float = None, **kwargs) -> None:  # type: ignore
+        """Continuous Servo class wrapping the gpiozero class for manual train switches.
+
+        Args:
+            initial_value: intial value of the servo
+
+        References:
+            https://picozero.readthedocs.io/en/latest/recipes.html#servo
+        """
+        super(ContinuousServoMotor, self).__init__(**kwargs)
+
+        self.__name__ = "Continuous Servo Motor"
+        if len(self.pin) != self.get_required_pins:
+            raise ValueError(f"Expecting {self.required_pins} pins. Found {self.pin}")
+        self.initial_value = initial_value
+
+        if self.initial_value and (
+            self.initial_value < 0.0 or self.initial_value > 1.0
+        ):
+            raise ValueError(
+                f"initial_value must be in [0.0, 1.0], found {self.initial_value}"
+            )
+
+        self.servo = ContinousServo(
+            pin=self.pin[0],
+            initial_value=self.initial_value,
+        )
+
+    def custom_state_setter(self, state: str) -> None:
+        pass
+
+    def _action(self, action: str) -> str:
+        _no_speed: float = 0.5
+        if action == ContinuousServoMotor.on_state:
+            self.servo.on(speed=_no_speed + self.speed, t=self.t, wait=True)
+        elif action == ContinuousServoMotor.off_state:
+            self.servo.on(speed=_no_speed - self.speed, t=self.t, wait=True)
+        elif action is None:
+            self.servo.off()
+        else:
+            raise ValueError("Invalid command to servo." + f"\n Found action: {action}")
+        return str(action)
+
+    def __del__(self) -> None:
+        self.servo.close()
+
+
+class DoubleContinuousServoMotor(ContinuousServoMotor):
+    required_pins = 2
+
+    def __init__(self, **kwargs) -> None:
+        super(DoubleContinuousServoMotor, self).__init__(**kwargs)
+        self.__name__ = "Double Continuous Servo Motor"
+
+
+class RelayTrainSwitch(StatefulBinaryDevice):
     required_pins: int = 2
     on_state: str = "straight"
     off_state: str = "turn"
@@ -334,7 +430,7 @@ class RelayTrainSwitch(BinaryDevice):
         self.br_relay.close()
 
 
-class OnOff(BinaryDevice):
+class OnOff(StatefulBinaryDevice):
     required_pins = 1
     on_state = "on"
     off_state = "off"
@@ -541,6 +637,8 @@ class InvertedRelayTrainSwitch(RelayTrainSwitch):
 SINGLE_PIN_MAP: dict[str, type[BinaryDevice]] = {
     const("Servo Train Switch"): ServoTrainSwitch,
     const("servo"): ServoTrainSwitch,
+    const("Motor"): DoubleContinuousServoMotor,
+    const("motor"): DoubleContinuousServoMotor,
     const("On/Off"): OnOff,
     const("onoff"): OnOff,
     const("Disconnect"): Disconnect,
@@ -570,6 +668,8 @@ CLS_MAP: dict[str, type[BinaryDevice]] = {
     const("spuri"): InvertedSpurTrainSwitch,
     const("Double Servo Train Switch"): DoubleServoTrainSwitch,
     const("doubleservo"): DoubleServoTrainSwitch,
+    const("Double Motor"): DoubleContinuousServoMotor,
+    const("doublemotor"): DoubleContinuousServoMotor,
     const("Double Disconnect"): DoubleDisconnect,
     const("doubledisconnect"): DoubleDisconnect,
     const("Double Unloader"): DoubleUnloader,

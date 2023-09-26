@@ -28,6 +28,8 @@ class PinMixin:
     Mixin used by devices that have a single pin number.
     """
 
+    _pin_num: int
+
     @property
     def pin(self):
         """
@@ -43,6 +45,8 @@ class PinsMixin:
     """
     Mixin used by devices that use multiple pins.
     """
+
+    _pin_nums: tuple[int, ...]
 
     @property
     def pins(self):
@@ -126,7 +130,6 @@ class ValueChange:
             return next(self._gen)
 
         except StopIteration:
-
             self._n = self._n - 1 if self._n is not None else None
             if self._n == 0:
                 # it's the end, return None
@@ -774,3 +777,151 @@ class AngularServo(Servo):
                 "AngularServo angle must be between %s and %s, or None"
                 % (self.min_angle, self.max_angle)
             )
+
+
+class Motor(PinsMixin):
+    """
+    Represents a motor connected to a motor controller that has a two-pin
+    input. One pin drives the motor "forward", the other drives the motor
+    "backward".
+
+    :type forward: int
+    :param forward:
+        The GP pin that controls the "forward" motion of the motor.
+
+    :type backward: int
+    :param backward:
+        The GP pin that controls the "backward" motion of the motor.
+
+    :param bool pwm:
+        If :data:`True` (the default), PWM pins are used to drive the motor.
+        When using PWM pins, values between 0 and 1 can be used to set the
+        speed.
+
+    """
+
+    def __init__(self, forward: int, backward: int, pwm: bool = True):
+        self._pin_nums = (forward, backward)
+        self._forward = (
+            PWMOutputDevice(forward) if pwm else DigitalOutputDevice(forward)
+        )
+        self._backward = (
+            PWMOutputDevice(backward) if pwm else DigitalOutputDevice(backward)
+        )
+
+    def on(self, speed=1, t=None, wait=False):
+        """
+        Turns the motor on and makes it turn.
+
+        :param float speed:
+            The speed as a value between -1 and 1: 1 turns the motor at
+            full speed in one direction, -1 turns the motor at full speed in
+            the opposite direction. Defaults to 1.
+
+        :param float t:
+            The time in seconds that the motor should run for. If None is
+            specified, the motor will stay on. The default is None.
+
+        :param bool wait:
+           If True, the method will block until the time `t` has expired.
+           If False, the method will return and the motor will turn on in
+           the background. Defaults to False. Only effective if `t` is not
+           None.
+        """
+        if speed > 0:
+            self._backward.off()
+            self._forward.on(speed, t, wait)
+
+        elif speed < 0:
+            self._forward.off()
+            self._backward.on(-speed, t, wait)
+
+        else:
+            self.off()
+
+    def off(self):
+        """
+        Stops the motor turning.
+        """
+        self._backward.off()
+        self._forward.off()
+
+    @property
+    def value(self):
+        """
+        Sets or returns the motor speed as a value between -1 and 1: -1 is full
+        speed "backward", 1 is full speed "forward", 0 is stopped.
+        """
+        return self._forward.value + (-self._backward.value)
+
+    @value.setter
+    def value(self, value):
+        if value != 0:
+            self.on(value)
+        else:
+            self.stop()
+
+    def forward(self, speed=1, t=None, wait=False):
+        """
+        Makes the motor turn "forward".
+
+        :param float speed:
+            The speed as a value between 0 and 1: 1 is full speed, 0 is stop. Defaults to 1.
+
+        :param float t:
+            The time in seconds that the motor should turn for. If None is
+            specified, the motor will stay on. The default is None.
+
+        :param bool wait:
+           If True, the method will block until the time `t` has expired.
+           If False, the method will return and the motor will turn on in
+           the background. Defaults to False. Only effective if `t` is not
+           None.
+        """
+        self.on(speed, t, wait)
+
+    def backward(self, speed=1, t=None, wait=False):
+        """
+        Makes the motor turn "backward".
+
+        :param float speed:
+            The speed as a value between 0 and 1: 1 is full speed, 0 is stop. Defaults to 1.
+
+        :param float t:
+            The time in seconds that the motor should turn for. If None is
+            specified, the motor will stay on. The default is None.
+
+        :param bool wait:
+           If True, the method will block until the time `t` has expired.
+           If False, the method will return and the motor will turn on in
+           the background. Defaults to False. Only effective if `t` is not
+           None.
+        """
+        self.on(-speed, t, wait)
+
+    def close(self):
+        """
+        Closes the device and releases any resources. Once closed, the device
+        can no longer be used.
+        """
+        self._forward.close()
+        self._backward.close()
+
+
+Motor.start = Motor.on
+Motor.stop = Motor.off
+
+
+class ContinousServo(Servo):
+    """Extends Servo into a continous PWM-controlled servo.
+
+    Notes:
+        Adds functionality of `Servo` to be similar to that of `Motor`.
+
+    Refs:
+        https://picozero.readthedocs.io/en/latest/api.html#motor
+    """
+
+    def on(self, speed: float, t: float, wait: bool):
+        """Turns the motor on and makes it turn."""
+        super(ContinousServo, self).on(value=speed, t=t, wait=wait)  # type: ignore
