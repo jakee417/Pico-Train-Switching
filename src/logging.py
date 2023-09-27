@@ -12,24 +12,35 @@ class Logging:
 def log_record(record: str) -> None:
     year, month, mday, hour, minute, second, _, _ = time.localtime()
     header = f"{year}:{month}:{mday}::{hour}:{minute}:{second}@ "
+    _new_record = f"{header}{record}\n"
 
     if Logging._LOG_FILE not in os.listdir():
-        log_new_record(f"{header}{record}\n")
+        log_new_record(_new_record)
+    else:
+        add_record(record=_new_record)
+        delete_k_records(k=Logging._MAX_LINES)
 
-    with open(Logging._LOG_FILE, "r") as f_read:
-        data = f_read.read().splitlines(True)
-        data.append(f"{header}{record}\n")
-    if len(data) > Logging._MAX_LINES:
-        data = data[1:]
-    with open(Logging._LOG_FILE, "w") as f_write:
-        for line in data:
-            f_write.write(line)
+
+def add_record(record: str) -> None:
+    """Extend the log file by one record."""
+    with open(Logging._LOG_FILE, "a") as f:
+        f.write(record)
+
+
+def delete_k_records(k: int) -> None:
+    """Deletes the first record in the log file."""
+    with open(Logging._LOG_FILE, "r") as f:
+        lines = f.readlines()
+        lines = lines if len(lines) <= k else lines[1:]
+
+    with open(Logging._LOG_FILE, "w") as f:
+        for line in lines:
+            f.write(line)
 
 
 def log_new_record(record: str) -> None:
-    with open(Logging._LOG_FILE, "w") as f_write:
-        f_write.write(record)
-    return
+    with open(Logging._LOG_FILE, "w") as f:
+        f.write(record)
 
 
 def log_dump():
