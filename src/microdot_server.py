@@ -15,6 +15,8 @@ from .server_methods import (
     get_devices,
     get_profiles,
     load_json,
+    on_pins,
+    off_pins,
     remove_json,
     reset_pins,
     toggle_pins,
@@ -110,6 +112,20 @@ def devices(_: Request) -> str:
 @timed_function
 def devices_toggle_pins(_: Request, pins: str) -> str:
     return dumps(toggle_pins(pins))
+
+
+@app.put("/devices/on/<pins>")
+@led_flash
+@timed_function
+def devices_on_pins(_: Request, pins: str) -> str:
+    return dumps(on_pins(pins))
+
+
+@app.put("/devices/off/<pins>")
+@led_flash
+@timed_function
+def devices_off_pins(_: Request, pins: str) -> str:
+    return dumps(off_pins(pins))
 
 
 @app.put("/devices/reset/<pins>")

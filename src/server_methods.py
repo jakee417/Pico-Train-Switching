@@ -70,24 +70,34 @@ def get_devices() -> dict[str, list[dict[str, object]]]:
 
 def toggle_pins(pins: str) -> dict[str, list[dict[str, object]]]:
     """Toggle the state of a device, or set to "self.on_state" by default."""
-    _pins = convert_csv_tuples(pins)
-    device = ServerMethods.devices[str(_pins)]
+    _pins = str(convert_csv_tuples(pins))
+    device = ServerMethods.devices[_pins]
     if device.state == device.on_state:
-        ServerMethods.devices[str(_pins)].action(device.off_state)
+        ServerMethods.devices[_pins].action(device.off_state)
     else:
-        ServerMethods.devices[str(_pins)].action(device.on_state)
-    return get_return_dict(
-        OrderedDict({const(str(_pins)): ServerMethods.devices[str(_pins)]})
-    )
+        ServerMethods.devices[_pins].action(device.on_state)
+    return get_return_dict(OrderedDict({const(_pins): ServerMethods.devices[_pins]}))
+
+
+def on_pins(pins: str) -> dict[str, list[dict[str, object]]]:
+    _pins = str(convert_csv_tuples(pins))
+    device = ServerMethods.devices[_pins]
+    ServerMethods.devices[_pins].action(device.on_state)
+    return get_return_dict(OrderedDict({const(_pins): ServerMethods.devices[_pins]}))
+
+
+def off_pins(pins: str) -> dict[str, list[dict[str, object]]]:
+    _pins = str(convert_csv_tuples(pins))
+    device = ServerMethods.devices[_pins]
+    ServerMethods.devices[_pins].action(device.off_state)
+    return get_return_dict(OrderedDict({const(_pins): ServerMethods.devices[_pins]}))
 
 
 def reset_pins(pins: str) -> dict[str, list[dict[str, object]]]:
     """Reset the state of a device at a given set of pins."""
-    _pins = convert_csv_tuples(pins)
-    ServerMethods.devices[str(_pins)].action(None)  # type: ignore
-    return get_return_dict(
-        OrderedDict({const(str(_pins)): ServerMethods.devices[str(_pins)]})
-    )
+    _pins = str(convert_csv_tuples(pins))
+    ServerMethods.devices[_pins].action(None)  # type: ignore
+    return get_return_dict(OrderedDict({const(_pins): ServerMethods.devices[_pins]}))
 
 
 def change_pins(pins: str, device_type: str) -> dict[str, list[dict[str, object]]]:

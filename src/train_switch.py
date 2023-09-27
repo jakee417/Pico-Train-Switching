@@ -308,12 +308,13 @@ class ContinuousServoMotor(StatelessBinaryDevice):
     on_state = "next"
     off_state = "last"
 
-    t: float = 0.3
-    speed: float = 0.2
+    t: float = 1.0
+    # value = 0.5 +/- speed \in (0, 1)
+    speed: float = 0.45
 
     # Optional[float]
     def __init__(self, initial_value: float = None, **kwargs) -> None:  # type: ignore
-        """Continuous Servo class wrapping the gpiozero class for manual train switches.
+        """Continuous Servo class wrapping the picozero Servo.
 
         Args:
             initial_value: intial value of the servo
@@ -334,11 +335,7 @@ class ContinuousServoMotor(StatelessBinaryDevice):
             raise ValueError(
                 f"initial_value must be in [0.0, 1.0], found {self.initial_value}"
             )
-
-        self.servo = ContinousServo(
-            pin=self.pin[0],
-            initial_value=self.initial_value,
-        )
+        self.servo = ContinousServo(pin=self.pin[0], initial_value=self.initial_value)
 
     def custom_state_setter(self, state: str) -> None:
         pass
@@ -346,9 +343,9 @@ class ContinuousServoMotor(StatelessBinaryDevice):
     def _action(self, action: str) -> str:
         _no_speed: float = 0.5
         if action == ContinuousServoMotor.on_state:
-            self.servo.on(speed=_no_speed + self.speed, t=self.t, wait=True)
-        elif action == ContinuousServoMotor.off_state:
             self.servo.on(speed=_no_speed - self.speed, t=self.t, wait=True)
+        elif action == ContinuousServoMotor.off_state:
+            self.servo.on(speed=_no_speed + self.speed, t=self.t, wait=True)
         elif action is None:
             self.servo.off()
         else:
