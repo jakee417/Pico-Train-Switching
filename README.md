@@ -155,7 +155,7 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 <!-- LICENSE -->
 ## License
 
-Distributed under the MIT License. See `LICENSE.txt` for more information.
+Distributed under the MIT License. See `LICENSE` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -182,5 +182,5 @@ Project Link: [https://github.com/jakee417/Pico-Train-Switching](https://github.
 [issues-shield]: https://img.shields.io/github/issues/jakee417/Pico-Train-Switching.svg?style=for-the-badge
 [issues-url]: https://github.com/jakee417/Pico-Train-Switching/issues
 [license-shield]: https://img.shields.io/github/license/jakee417/Pico-Train-Switching.svg?style=for-the-badge
-[license-url]: https://github.com/jakee417/Pico-Train-Switching/blob/master/LICENSE.txt
+[license-url]: https://github.com/jakee417/Pico-Train-Switching/blob/main/LICENSE
 [ios-logo]: images/20.png
