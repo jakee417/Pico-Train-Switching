@@ -15,7 +15,7 @@ def run() -> None:
     post("10,11", "relay")  # 6
     post("12,13", "relay")  # 7
     post("14,15", "relay")  # 8
-    post("16,17", "relay")  # 19
+    post("16,17", "relay")  # 9
     post("18,19", "relay")  # 10
     post("20,21", "relay")  # 11
     post("22,26", "relay")  # 12

@@ -3,7 +3,7 @@ import time
 from machine import Timer
 from micropython import const
 
-from .lib.picozero import DigitalOutputDevice, AngularServo, ContinousServo
+from .lib.picozero import DigitalOutputDevice, AngularServo, ContinousServo, Motor
 
 
 class BinaryDevice(object):
@@ -364,6 +364,49 @@ class DoubleContinuousServoMotor(ContinuousServoMotor):
         self.__name__ = "Double Continuous Servo Motor"
 
 
+class DCMotor(StatelessBinaryDevice):
+    required_pins = 2
+    on_state = "next"
+    off_state = "last"
+
+    t: float = 1.0
+
+    # Optional[float]
+    def __init__(self, **kwargs) -> None:
+        """DC Motor class wrapping the picozero Motor.
+
+        Args:
+            initial_value: intial value of the motor
+
+        References:
+            https://picozero.readthedocs.io/en/latest/recipes.html#motor
+        """
+        super(DCMotor, self).__init__(**kwargs)
+
+        self.__name__ = "DC Motor"
+        if len(self.pin) != self.get_required_pins:
+            raise ValueError(f"Expecting {self.required_pins} pins. Found {self.pin}")
+
+        self.motor = Motor(forward=self.pin[0], backward=self.pin[1], pwm=True)
+
+    def custom_state_setter(self, state: str) -> None:
+        pass
+
+    def _action(self, action: str) -> str:
+        if action == DCMotor.on_state:
+            self.motor.on(speed=1, t=self.t, wait=True)
+        elif action == DCMotor.off_state:
+            self.motor.on(speed=-1, t=self.t, wait=True)
+        elif action is None:
+            self.motor.off()
+        else:
+            raise ValueError("Invalid command to motor." + f"\n Found action: {action}")
+        return str(action)
+
+    def __del__(self) -> None:
+        self.motor.close()
+
+
 class RelayTrainSwitch(StatefulBinaryDevice):
     required_pins: int = 2
     on_state: str = "straight"
@@ -631,11 +674,12 @@ class InvertedRelayTrainSwitch(RelayTrainSwitch):
         self.__name__ = "Relay(i) Train Switch"
 
 
+# All the devices involving only one pin.
 SINGLE_PIN_MAP: dict[str, type[BinaryDevice]] = {
     const("Servo Train Switch"): ServoTrainSwitch,
     const("servo"): ServoTrainSwitch,
-    const("Motor"): DoubleContinuousServoMotor,
-    const("motor"): DoubleContinuousServoMotor,
+    const("Motor"): ContinuousServoMotor,
+    const("motor"): ContinuousServoMotor,
     const("On/Off"): OnOff,
     const("onoff"): OnOff,
     const("Disconnect"): Disconnect,
@@ -652,6 +696,7 @@ SINGLE_PIN_MAP: dict[str, type[BinaryDevice]] = {
     const("singlerelayi"): InvertedSingleRelayTrainSwitch,
 }
 
+# All the devices involving two pins.
 CLS_MAP: dict[str, type[BinaryDevice]] = {
     const("Empty"): EmptySwitch,
     const("empty"): EmptySwitch,
@@ -667,6 +712,7 @@ CLS_MAP: dict[str, type[BinaryDevice]] = {
     const("doubleservo"): DoubleServoTrainSwitch,
     const("Double Motor"): DoubleContinuousServoMotor,
     const("doublemotor"): DoubleContinuousServoMotor,
+    const("motor"): DCMotor,
     const("Double Disconnect"): DoubleDisconnect,
     const("doubledisconnect"): DoubleDisconnect,
     const("Double Unloader"): DoubleUnloader,

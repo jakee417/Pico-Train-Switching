@@ -800,7 +800,7 @@ class Motor(PinsMixin):
 
     """
 
-    def __init__(self, forward: int, backward: int, pwm: bool = True):
+    def __init__(self, forward, backward, pwm=True):
         self._pin_nums = (forward, backward)
         self._forward = (
             PWMOutputDevice(forward) if pwm else DigitalOutputDevice(forward)
