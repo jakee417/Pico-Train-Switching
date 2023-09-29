@@ -910,18 +910,3 @@ class Motor(PinsMixin):
 
 Motor.start = Motor.on
 Motor.stop = Motor.off
-
-
-class ContinousServo(Servo):
-    """Extends Servo into a continous PWM-controlled servo.
-
-    Notes:
-        Adds functionality of `Servo` to be similar to that of `Motor`.
-
-    Refs:
-        https://picozero.readthedocs.io/en/latest/api.html#motor
-    """
-
-    def on(self, speed: float, t: float, wait: bool):
-        """Turns the motor on and makes it turn."""
-        super(ContinousServo, self).on(value=speed, t=t, wait=wait)  # type: ignore

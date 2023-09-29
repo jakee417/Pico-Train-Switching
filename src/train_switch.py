@@ -3,7 +3,7 @@ import time
 from machine import Timer
 from micropython import const
 
-from .lib.picozero import DigitalOutputDevice, AngularServo, ContinousServo, Motor
+from .lib.picozero import DigitalOutputDevice, AngularServo, Motor, Servo
 
 
 class BinaryDevice(object):
@@ -303,6 +303,21 @@ class DoubleServoTrainSwitch(ServoTrainSwitch):
         self.__name__ = "Double Servo Train Switch"
 
 
+class ContinousServo(Servo):
+    """Extends Servo into a continous PWM-controlled servo.
+
+    Notes:
+        Adds functionality of `Servo` to be similar to that of `Motor`.
+
+    Refs:
+        https://picozero.readthedocs.io/en/latest/api.html#motor
+    """
+
+    def on(self, speed: float, t: float, wait: bool):
+        """Turns the motor on and makes it turn."""
+        super(ContinousServo, self).on(value=speed, t=t, wait=wait)  # type: ignore
+
+
 class ContinuousServoMotor(StatelessBinaryDevice):
     required_pins = 1
     on_state = "next"
@@ -313,7 +328,7 @@ class ContinuousServoMotor(StatelessBinaryDevice):
     speed: float = 0.45
 
     # Optional[float]
-    def __init__(self, initial_value: float = None, **kwargs) -> None:  # type: ignore
+    def __init__(self, **kwargs) -> None:  # type: ignore
         """Continuous Servo class wrapping the picozero Servo.
 
         Args:
@@ -327,15 +342,7 @@ class ContinuousServoMotor(StatelessBinaryDevice):
         self.__name__ = "Continuous Servo Motor"
         if len(self.pin) != self.get_required_pins:
             raise ValueError(f"Expecting {self.required_pins} pins. Found {self.pin}")
-        self.initial_value = initial_value
-
-        if self.initial_value and (
-            self.initial_value < 0.0 or self.initial_value > 1.0
-        ):
-            raise ValueError(
-                f"initial_value must be in [0.0, 1.0], found {self.initial_value}"
-            )
-        self.servo = ContinousServo(pin=self.pin[0], initial_value=self.initial_value)
+        self.servo = ContinousServo(pin=self.pin[0])
 
     def custom_state_setter(self, state: str) -> None:
         pass
