@@ -3,7 +3,7 @@ import time
 from machine import Timer
 from micropython import const
 
-from .lib.picozero import DigitalOutputDevice, AngularServo, Motor, Servo
+from .lib.picozero import DigitalOutputDevice, AngularServo, Motor, Servo, PinsMixin
 
 
 class BinaryDevice(object):
@@ -331,9 +331,6 @@ class ContinuousServoMotor(StatelessBinaryDevice):
     def __init__(self, **kwargs) -> None:  # type: ignore
         """Continuous Servo class wrapping the picozero Servo.
 
-        Args:
-            initial_value: intial value of the servo
-
         References:
             https://picozero.readthedocs.io/en/latest/recipes.html#servo
         """
@@ -382,9 +379,6 @@ class DCMotor(StatelessBinaryDevice):
     def __init__(self, **kwargs) -> None:
         """DC Motor class wrapping the picozero Motor.
 
-        Args:
-            initial_value: intial value of the motor
-
         References:
             https://picozero.readthedocs.io/en/latest/recipes.html#motor
         """
@@ -406,6 +400,124 @@ class DCMotor(StatelessBinaryDevice):
             self.motor.on(speed=-1, t=self.t, wait=True)
         elif action is None:
             self.motor.off()
+        else:
+            raise ValueError("Invalid command to motor." + f"\n Found action: {action}")
+        return str(action)
+
+    def __del__(self) -> None:
+        self.motor.close()
+
+
+class StepMotor(PinsMixin):
+    _direction: DigitalOutputDevice
+    _step: DigitalOutputDevice
+    _DELAY: int = const(1)  # in milliseconds.
+
+    def __init__(self, direction: int, step: int):
+        """
+        Represents a stepper motor connected to a motor controller that has a
+        two-pin input. One pin controls the logic to create "steps" and the
+        other controls the direction of the motor's motion.
+
+        :type direction: int
+        :param direction:
+            The GP pin that controls the steps of the motor.
+
+        :type step: int
+        :param step:
+            The GP pin that controls the direction of the motion of the motor.
+        """
+        self._pin_nums = (direction, step)
+        self._direction = DigitalOutputDevice(pin=direction)
+        self._step = DigitalOutputDevice(pin=step)
+
+    def on(self, steps: int) -> None:
+        _delay = StepMotor._DELAY
+        for _ in range(steps):
+            self._step.on(value=1)
+            time.sleep_ms(_delay)
+            self._step.on(value=0)
+            time.sleep_ms(_delay)
+
+    def forward(self, steps: int) -> None:
+        self._direction.on(value=1)
+        self.on(steps=steps)
+
+    def backward(self, steps: int) -> None:
+        self._direction.on(value=0)
+        self.on(steps=steps)
+
+    def close(self):
+        """
+        Closes the device and releases any resources. Once closed, the device
+        can no longer be used.
+        """
+        self._direction.close()
+        self._step.close()
+
+
+class AsyncStepMotor(StepMotor):
+    _step_count: int
+    _timer: Timer
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._timer = Timer()
+
+    def step_closure(self, steps: int):
+        # Reset the timer and step count.
+        self._step_count = 0
+        _stop_condition: int = steps * 2
+
+        def step(timer: Timer):
+            self._step.toggle()
+            self._step_count += 1
+            if self._step_count >= _stop_condition:
+                timer.deinit()
+
+        return step
+
+    def on(self, steps: int) -> None:
+        self._timer.init(
+            mode=Timer.PERIODIC,
+            period=StepMotor._DELAY,
+            callback=self.step_closure(steps=steps),
+        )
+
+
+class StepperMotor(StatelessBinaryDevice):
+    required_pins = 2
+    on_state = "next"
+    off_state = "last"
+
+    _STEPS: int = const(200)
+
+    # Optional[float]
+    def __init__(self, **kwargs) -> None:
+        """Stepper Motor class wrapping the picozero StepMotor.
+
+        References:
+            https://picozero.readthedocs.io/en/latest/recipes.html#motor
+        """
+        super(StepperMotor, self).__init__(**kwargs)
+
+        self.__name__ = "Stepper Motor"
+        if len(self.pin) != self.get_required_pins:
+            raise ValueError(f"Expecting {self.required_pins} pins. Found {self.pin}")
+
+        self.motor = StepMotor(direction=self.pin[0], step=self.pin[1])
+
+    def custom_state_setter(self, state: str) -> None:
+        pass
+
+    def _action(self, action: str) -> str:
+        if action == DCMotor.on_state:
+            self.motor.forward(steps=StepperMotor._STEPS)
+        elif action == DCMotor.off_state:
+            self.motor.backward(steps=StepperMotor._STEPS)
+        elif action is None:
+            # TODO: Implement a sleep function
+            pass
         else:
             raise ValueError("Invalid command to motor." + f"\n Found action: {action}")
         return str(action)
@@ -720,6 +832,7 @@ CLS_MAP: dict[str, type[BinaryDevice]] = {
     const("Double Motor"): DoubleContinuousServoMotor,
     const("doublemotor"): DoubleContinuousServoMotor,
     const("motor"): DCMotor,
+    const("steppermotor"): StepperMotor,
     const("Double Disconnect"): DoubleDisconnect,
     const("doubledisconnect"): DoubleDisconnect,
     const("Double Unloader"): DoubleUnloader,
