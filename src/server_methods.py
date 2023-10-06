@@ -167,9 +167,9 @@ def load_json(json: dict[str, str]) -> dict[str, list[dict[str, object]]]:
 
     # Update the global devices.
     close_devices(ServerMethods.devices)  # close out old devices
-    devices = construct_from_cfg(cfg)  # start new devices
-    ServerMethods.pin_pool = update_pin_pool(devices)
-    return get_return_dict(devices)
+    ServerMethods.devices = construct_from_cfg(cfg)  # start new devices
+    ServerMethods.pin_pool = update_pin_pool(ServerMethods.devices)
+    return get_return_dict(ServerMethods.devices)
 
 
 def remove_json(json: dict[str, str]) -> dict[str, list[str]]:
