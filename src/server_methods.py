@@ -1,5 +1,7 @@
 import os
 import gc
+import io
+import sys
 import time
 import ujson
 from machine import reset, Timer
@@ -237,6 +239,44 @@ def app_ota() -> None:
 
 
 ######################################################################
+# Decorators
+######################################################################
+
+
+def led_flash(func):
+    async def wrapper(*args, **kwargs):
+        pico_led.on()
+        await func(*args, **kwargs)
+        pico_led.off()
+
+    return wrapper
+
+
+def timed_function(func):
+    myname = str(func).split(" ")[1]
+
+    async def new_func(*args, **kwargs):
+        t = time.ticks_us()
+        await func(*args, **kwargs)
+        delta = time.ticks_diff(time.ticks_us(), t)
+        log_record("{} - {:6.1f}(ms)".format(myname, delta / 1000))
+
+    return new_func
+
+
+def log_exception(func):
+    async def new_func(*args, **kwargs):
+        try:
+            await func(*args, **kwargs)
+        except Exception as e:
+            buffer = io.StringIO()
+            sys.print_exception(e, buffer)
+            log_record(buffer.getvalue())
+
+    return new_func
+
+
+######################################################################
 # API Helper Methods
 ######################################################################
 
@@ -265,28 +305,6 @@ def read_profile_json(json: dict[str, str]) -> str:
     if name is None:
         raise ValueError("Could not find NAME in profile request.")
     return name
-
-
-def led_flash(func):
-    async def wrapper(*args, **kwargs):
-        pico_led.on()
-        await func(*args, **kwargs)
-        pico_led.off()
-
-    return wrapper
-
-
-def timed_function(func):
-    myname = str(func).split(" ")[1]
-
-    async def new_func(*args, **kwargs):
-        t = time.ticks_us()
-        result = await func(*args, **kwargs)
-        delta = time.ticks_diff(time.ticks_us(), t)
-        log_record("{} - {:6.1f}(ms)".format(myname, delta / 1000))
-        return result
-
-    return new_func
 
 
 def close_devices(devices: OrderedDict[str, BinaryDevice]) -> None:

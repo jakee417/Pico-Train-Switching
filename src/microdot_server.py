@@ -27,6 +27,7 @@ from .server_methods import (
     app_ota,
     ota_closure,
     timed_function,
+    log_exception,
 )
 
 ######################################################################
@@ -48,6 +49,7 @@ def server_log_request(request: Request, response: Response):
 
 
 @app.get("/")
+@log_exception
 @led_flash
 @timed_function
 def root(_: Request) -> str:
@@ -55,6 +57,7 @@ def root(_: Request) -> str:
 
 
 @app.get("/scan")
+@log_exception
 @led_flash
 @timed_function
 def server_scan(_: Request) -> str:
@@ -62,6 +65,7 @@ def server_scan(_: Request) -> str:
 
 
 @app.get("/network")
+@log_exception
 @led_flash
 @timed_function
 def server_network(_: Request) -> str:
@@ -69,6 +73,7 @@ def server_network(_: Request) -> str:
 
 
 @app.get("/shutdown")
+@log_exception
 @led_flash
 @timed_function
 def server_app_shutdown(request: Request):
@@ -78,6 +83,7 @@ def server_app_shutdown(request: Request):
 
 
 @app.get("/reset")
+@log_exception
 @led_flash
 @timed_function
 def server_app_reset(request: Request) -> str:
@@ -87,6 +93,7 @@ def server_app_reset(request: Request) -> str:
 
 
 @app.get("/update")
+@log_exception
 @led_flash
 @timed_function
 def server_app_update(request: Request):
@@ -101,6 +108,7 @@ def server_app_update(request: Request):
 
 
 @app.get("/devices")
+@log_exception
 @led_flash
 @timed_function
 def devices(_: Request) -> str:
@@ -108,6 +116,7 @@ def devices(_: Request) -> str:
 
 
 @app.put("/devices/toggle/<pins>")
+@log_exception
 @led_flash
 @timed_function
 def devices_toggle_pins(_: Request, pins: str) -> str:
@@ -115,6 +124,7 @@ def devices_toggle_pins(_: Request, pins: str) -> str:
 
 
 @app.put("/devices/on/<pins>")
+@log_exception
 @led_flash
 @timed_function
 def devices_on_pins(_: Request, pins: str) -> str:
@@ -122,6 +132,7 @@ def devices_on_pins(_: Request, pins: str) -> str:
 
 
 @app.put("/devices/off/<pins>")
+@log_exception
 @led_flash
 @timed_function
 def devices_off_pins(_: Request, pins: str) -> str:
@@ -129,6 +140,7 @@ def devices_off_pins(_: Request, pins: str) -> str:
 
 
 @app.put("/devices/reset/<pins>")
+@log_exception
 @led_flash
 @timed_function
 def devices_reset_pins(_: Request, pins: str) -> str:
@@ -136,6 +148,7 @@ def devices_reset_pins(_: Request, pins: str) -> str:
 
 
 @app.put("/devices/change/<pins>/<device_type>")
+@log_exception
 @led_flash
 @timed_function
 def devices_change(_: Request, pins: str, device_type: str) -> str:
@@ -148,6 +161,7 @@ def devices_change(_: Request, pins: str, device_type: str) -> str:
 
 
 @app.get("/profiles")
+@log_exception
 @led_flash
 @timed_function
 def profiles(_: Request) -> str:
@@ -155,6 +169,7 @@ def profiles(_: Request) -> str:
 
 
 @app.put("/profiles")
+@log_exception
 @led_flash
 @timed_function
 def devices_load_json(request: Request) -> str:
@@ -166,6 +181,7 @@ def devices_load_json(request: Request) -> str:
 
 
 @app.post("/profiles")
+@log_exception
 @led_flash
 @timed_function
 def profiles_save(request: Request) -> str:
@@ -177,6 +193,7 @@ def profiles_save(request: Request) -> str:
 
 
 @app.delete("/profiles")
+@log_exception
 @led_flash
 @timed_function
 def profiles_delete(request: Request) -> str:
@@ -193,6 +210,7 @@ def profiles_delete(request: Request) -> str:
 
 
 @app.post("/credentials")
+@log_exception
 @led_flash
 @timed_function
 def server_save_credentials(request: Request) -> str:
@@ -213,6 +231,7 @@ def server_save_credentials(request: Request) -> str:
 
 
 @app.delete("/credentials")
+@log_exception
 @led_flash
 @timed_function
 def server_reset_credentials(_: Request) -> str:
@@ -226,6 +245,7 @@ def server_reset_credentials(_: Request) -> str:
 
 
 @app.get("/log")
+@log_exception
 @led_flash
 @timed_function
 def server_log(_: Request):
@@ -233,11 +253,22 @@ def server_log(_: Request):
 
 
 @app.delete("/log")
+@log_exception
 @led_flash
 @timed_function
 def server_log_flush(_: Request):
     log_flush()
     return StatusMessage._SUCCESS
+
+
+@app.get("/error")
+@log_exception
+@led_flash
+@timed_function
+def error(_: Request) -> str:
+    class MockException(Exception):
+        pass
+    raise MockException("ERROR LOGGED")
 
 
 def run() -> None:
