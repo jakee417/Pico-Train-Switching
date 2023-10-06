@@ -272,6 +272,5 @@ def error(_: Request) -> str:
 
 
 def run() -> None:
-    log_flush()
     app.run(host="0.0.0.0", port=80)
     ota_closure()
