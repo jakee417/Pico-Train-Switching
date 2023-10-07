@@ -166,11 +166,9 @@ class StatelessBinaryDevice(BinaryDevice):
         Args:
             action: One of either `self.on_state` or `self.off_state`.
         """
-        initial_state = self.state
-        self.state = action
         update = self._action(action)
         self.log(
-            initial_state=initial_state,
+            initial_state=self.state,
             action=action,
             update=update,
         )
