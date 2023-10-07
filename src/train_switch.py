@@ -1,5 +1,6 @@
 """Train switch classes"""
 import time
+import sys
 from machine import Timer
 from micropython import const
 
@@ -16,10 +17,6 @@ class BinaryDevice(object):
     required_pins: int = -1
     on_state: str = ""
     off_state: str = ""
-    # Readable id
-    __id__: str = "Base Train Switch"
-    # Serialized id
-    __serial_id__: str = "base"
 
     # Private attributes
     __pin: tuple[int, ...] = tuple()
@@ -47,17 +44,12 @@ class BinaryDevice(object):
         self.verbose = verbose
 
     @property
-    def id(self) -> str:
-        """Returns the id of the object."""
-        return self.__id__
-
-    @property
     def pin(self) -> tuple[int, ...]:
         """Returns the pin number(s)."""
         return self.__pin
 
     def __repr__(self):
-        return f"{self.id} @ Pin : {self.pin}"
+        return f"{type(self).__name__} @ Pin : {self.pin}"
 
     @property
     def pin_list(self) -> list[int]:
@@ -104,7 +96,7 @@ class BinaryDevice(object):
         return {
             const("pins"): self.pin,
             const("state"): self.state,
-            const("name"): self.id,
+            const("name"): type(self).__name__,
         }
 
     def log(self, initial_state: str, action: str, update: str) -> None:
@@ -188,8 +180,6 @@ class EmptySwitch(StatefulBinaryDevice):
     required_pins = 2
     on_state = None  # type: ignore
     off_state = None  # type: ignore
-    __id__ = "Empty"
-    __serial_id__: str = "empty"
 
     def __init__(
         self,
@@ -222,8 +212,6 @@ class ServoTrainSwitch(StatefulBinaryDevice):
     required_pins = 1
     on_state = "straight"
     off_state = "turn"
-    __id__ = "Servo Train Switch"
-    __serial_id__: str = "servo"
 
     def __init__(
         self,
@@ -302,8 +290,6 @@ class ServoTrainSwitch(StatefulBinaryDevice):
 
 class DoubleServoTrainSwitch(ServoTrainSwitch):
     required_pins = 2
-    __id__ = "Double Servo Train Switch"
-    __serial_id__ = "doubleservo"
 
     def __init__(self, **kwargs) -> None:
         super(DoubleServoTrainSwitch, self).__init__(**kwargs)
@@ -328,8 +314,6 @@ class ContinuousServoMotor(StatelessBinaryDevice):
     required_pins = 1
     on_state = "next"
     off_state = "last"
-    __id__ = "Servo Motor"
-    __serial_id__ = "servomotor"
 
     t: float = 1.0
     # value = 0.5 +/- speed \in (0, 1)
@@ -369,8 +353,6 @@ class ContinuousServoMotor(StatelessBinaryDevice):
 
 class DoubleContinuousServoMotor(ContinuousServoMotor):
     required_pins = 2
-    __id__ = "Double Motor"
-    __serial_id__ = "doublemotor"
 
     def __init__(self, **kwargs) -> None:
         super(DoubleContinuousServoMotor, self).__init__(**kwargs)
@@ -380,8 +362,6 @@ class DCMotor(StatelessBinaryDevice):
     required_pins = 2
     on_state = "next"
     off_state = "last"
-    __id__ = "DC Motor"
-    __serial_id__ = "motor"
 
     t: float = 1.0
 
@@ -498,8 +478,6 @@ class StepperMotor(StatelessBinaryDevice):
     required_pins = 2
     on_state = "next"
     off_state = "last"
-    __id__ = "Stepper Motor"
-    __serial_id__ = "steppermotor"
 
     _STEPS: int = const(200)
 
@@ -540,8 +518,6 @@ class RelayTrainSwitch(StatefulBinaryDevice):
     required_pins: int = 2
     on_state: str = "straight"
     off_state: str = "turn"
-    __id__ = "Relay Train Switch"
-    __serial_id__ = "relay"
 
     def __init__(
         self, active_high: bool = False, initial_value: bool = False, **kwargs
@@ -604,8 +580,6 @@ class OnOff(StatefulBinaryDevice):
     required_pins = 1
     on_state = "on"
     off_state = "off"
-    __id__ = "On/Off"
-    __serial_id__ = "onoff"
 
     def __init__(
         self,
@@ -652,8 +626,6 @@ class OnOff(StatefulBinaryDevice):
 
 class DoubleOnOff(OnOff):
     required_pins = 2
-    __id__ = "Double On/Off"
-    __serial_id__ = "doubleonoff"
 
     def __init__(self, **kwargs) -> None:
         super(DoubleOnOff, self).__init__(**kwargs)
@@ -661,9 +633,6 @@ class DoubleOnOff(OnOff):
 
 class Disconnect(OnOff):
     """Extension of On/Off for Disconnect accessory."""
-
-    __id__ = "Disconnect"
-    __serial_id__ = "disconnect"
 
     def __init__(self, active_high=False, **kwargs) -> None:
         super(Disconnect, self).__init__(active_high=active_high, **kwargs)
@@ -708,8 +677,6 @@ class Disconnect(OnOff):
 
 class DoubleDisconnect(Disconnect):
     required_pins = 2
-    __id__ = "Double Disconnect"
-    __serial_id__ = "doubledisconnect"
 
     def __init__(self, **kwargs) -> None:
         super(DoubleDisconnect, self).__init__(**kwargs)
@@ -718,17 +685,12 @@ class DoubleDisconnect(Disconnect):
 class Unloader(OnOff):
     """Extension of On/Off for Unloader accessory."""
 
-    __id__ = "Unloader"
-    __serial_id__ = "unloader"
-
     def __init__(self, **kwargs) -> None:
         super(Unloader, self).__init__(active_high=False, **kwargs)
 
 
 class DoubleUnloader(Unloader):
     required_pins = 2
-    __id__ = "Double Unloader"
-    __serial_id__ = "doubleunloader"
 
     def __init__(self, **kwargs) -> None:
         super(DoubleUnloader, self).__init__(**kwargs)
@@ -737,18 +699,12 @@ class DoubleUnloader(Unloader):
 class InvertedDisconnect(Disconnect):
     """Extension of On/Off for Disconnect accessory w/ inverted active_high."""
 
-    __id__ = "Disconnect(i)"
-    __serial_id__ = "disconnecti"
-
     def __init__(self, **kwargs) -> None:
         super(InvertedDisconnect, self).__init__(active_high=True, **kwargs)
 
 
 class InvertedUnloader(OnOff):
     """Extension of On/Off for Unloader accessory w/ inverted active_high."""
-
-    __id__ = "Unloader(i)"
-    __serial_id__ = "unloaderi"
 
     def __init__(self, **kwargs) -> None:
         super(InvertedUnloader, self).__init__(active_high=True, **kwargs)
@@ -759,8 +715,6 @@ class SingleRelayTrainSwitch(OnOff):
 
     on_state: str = "straight"
     off_state: str = "turn"
-    __id__ = "Single Relay Train Switch"
-    __serial_id__ = "singlerelay"
 
     def __init__(self, active_high=False, **kwargs) -> None:
         super(SingleRelayTrainSwitch, self).__init__(active_high=active_high, **kwargs)
@@ -772,18 +726,12 @@ class SingleRelayTrainSwitch(OnOff):
 class InvertedSingleRelayTrainSwitch(SingleRelayTrainSwitch):
     """Inverted Relay Train Switch using only one DigitalOutputDevice."""
 
-    __id__ = "Single Relay(i) Train Switch"
-    __serial_id__ = "singlerelayi"
-
     def __init__(self, **kwargs) -> None:
         super(InvertedSingleRelayTrainSwitch, self).__init__(active_high=True, **kwargs)
 
 
 class SpurTrainSwitch(RelayTrainSwitch):
     """Extension of Relay Switch that will optionally depower the track."""
-
-    __id__ = "Spur Train Switch"
-    __serial_id__ = "spur"
 
     def __init__(self, active_high: bool = False, **kwargs) -> None:
         super(SpurTrainSwitch, self).__init__(active_high=active_high, **kwargs)
@@ -808,9 +756,6 @@ class SpurTrainSwitch(RelayTrainSwitch):
 class InvertedSpurTrainSwitch(SpurTrainSwitch):
     """Extension of Spur Train Switch but with inverted active_high."""
 
-    __id__ = "Spur(i) Train Switch"
-    __serial_id__ = "spuri"
-
     def __init__(self, **kwargs) -> None:
         super(InvertedSpurTrainSwitch, self).__init__(active_high=True, **kwargs)
 
@@ -818,54 +763,15 @@ class InvertedSpurTrainSwitch(SpurTrainSwitch):
 class InvertedRelayTrainSwitch(RelayTrainSwitch):
     """Extension of Relay Train Switch but with inverted active_high."""
 
-    __id__ = "Relay(i) Train Switch"
-    __serial_id__ = "relayi"
-
     def __init__(self, **kwargs) -> None:
         super(InvertedRelayTrainSwitch, self).__init__(active_high=True, **kwargs)
 
 
-CLS: list[type[BinaryDevice]] = [
-    EmptySwitch,
-    RelayTrainSwitch,
-    InvertedRelayTrainSwitch,
-    SpurTrainSwitch,
-    InvertedSpurTrainSwitch,
-    DoubleServoTrainSwitch,
-    DoubleContinuousServoMotor,
-    DCMotor,
-    StepperMotor,
-    DoubleDisconnect,
-    DoubleUnloader,
-    DoubleOnOff,
-]
+CLS_MAP: dict[str, type[BinaryDevice]] = {
+    k: v
+    for k, v in sys.modules[__name__].__dict__.items()
+    # For space considerations, only offer devices requiring 2 pins.
+    if hasattr(v, "required_pins") and v.required_pins == 2
+}
 
-CLS_MAP: dict[str, type[BinaryDevice]] = {const(i.__id__): i for i in CLS}
-CLS_MAP.update({const(i.__serial_id__): i for i in CLS})
-
-# CLS_MAP: dict[str, type[BinaryDevice]] = {
-#     const("Empty"): EmptySwitch,
-#     const("empty"): EmptySwitch,
-#     const("Relay Train Switch"): RelayTrainSwitch,
-#     const("relay"): RelayTrainSwitch,
-#     const("Relay(i) Train Switch"): InvertedRelayTrainSwitch,
-#     const("relayi"): InvertedRelayTrainSwitch,
-#     const("Spur Train Switch"): SpurTrainSwitch,
-#     const("spur"): SpurTrainSwitch,
-#     const("Spur(i) Train Switch"): InvertedSpurTrainSwitch,
-#     const("spuri"): InvertedSpurTrainSwitch,
-#     const("Double Servo Train Switch"): DoubleServoTrainSwitch,
-#     const("doubleservo"): DoubleServoTrainSwitch,
-#     const("Double Motor"): DoubleContinuousServoMotor,
-#     const("doublemotor"): DoubleContinuousServoMotor,
-#     const("DC Motor"): DCMotor,
-#     const("motor"): DCMotor,
-#     const("Stepper Motor"): StepperMotor,
-#     const("steppermotor"): StepperMotor,
-#     const("Double Disconnect"): DoubleDisconnect,
-#     const("doubledisconnect"): DoubleDisconnect,
-#     const("Double Unloader"): DoubleUnloader,
-#     const("doubleunloader"): DoubleUnloader,
-#     const("Double On/Off"): DoubleOnOff,
-#     const("doubleonoff"): DoubleOnOff,
-# }
+DEFAULT_DEVICE: str = const(RelayTrainSwitch.__name__)

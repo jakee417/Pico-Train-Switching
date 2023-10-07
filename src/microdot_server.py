@@ -28,6 +28,8 @@ from .server_methods import (
     ota_closure,
     timed_function,
     log_exception,
+    add_favorite_profile,
+    delete_favorite_profile,
 )
 
 ######################################################################
@@ -176,8 +178,7 @@ def devices_load_json(request: Request) -> str:
     if request.json is not None:
         return dumps(load_json(request.json))
     else:
-        log_record("Found None in profile request")
-        raise ValueError
+        raise ValueError("Found `None` in profile request.")
 
 
 @app.post("/profiles")
@@ -188,8 +189,7 @@ def profiles_save(request: Request) -> str:
     if request.json is not None:
         return dumps(save_json(request.json))
     else:
-        log_record("Found None in profile request")
-        raise ValueError
+        raise ValueError("Found `None` in profile request.")
 
 
 @app.delete("/profiles")
@@ -200,8 +200,26 @@ def profiles_delete(request: Request) -> str:
     if request.json is not None:
         return dumps(remove_json(request.json))
     else:
-        log_record("Found None in profile request")
-        raise ValueError
+        raise ValueError("Found `None` in profile request.")
+
+
+@app.post("/profiles/favorite")
+@log_exception
+@led_flash
+@timed_function
+def profiles_favorite_add(request: Request) -> str:
+    if request.json is not None:
+        return dumps(add_favorite_profile(request.json))
+    else:
+        raise ValueError("Found `None` in favorite request.")
+
+
+@app.delete("/profiles/favorite")
+@log_exception
+@led_flash
+@timed_function
+def profiles_favorite_delete(request: Request) -> str:
+    return dumps(delete_favorite_profile())
 
 
 ######################################################################
@@ -259,16 +277,6 @@ def server_log(_: Request):
 def server_log_flush(_: Request):
     log_flush()
     return StatusMessage._SUCCESS
-
-
-@app.get("/error")
-@log_exception
-@led_flash
-@timed_function
-def error(_: Request) -> str:
-    class MockException(Exception):
-        pass
-    raise MockException("ERROR LOGGED")
 
 
 def run() -> None:

@@ -11,7 +11,7 @@ from micropython import const
 from .config import ota
 from .logging import log_record
 from .lib.picozero import pico_led
-from .train_switch import CLS_MAP, BinaryDevice
+from .train_switch import CLS_MAP, BinaryDevice, DEFAULT_DEVICE
 
 
 class ServerMethods:
@@ -29,6 +29,8 @@ class ServerMethods:
 
     _PROFILE_FOLDER = const("profiles")
     _PROFILE_PATH: str = const(f"./{_PROFILE_FOLDER}/")
+    _FAVORITE_FILE: str = const("__favorite_profile__")
+    _FAVORITE_PATH: str = const(f"{_PROFILE_PATH}" + _FAVORITE_FILE)
     if _PROFILE_FOLDER not in os.listdir():
         os.mkdir(_PROFILE_FOLDER)
 
@@ -53,11 +55,13 @@ class StatusMessage(object):
 
 class ProfileRequest(object):
     _NAME: str = const("NAME")
+    _FAVORITE: str = const("FAVORITE")
 
 
 class ResponseKey(object):
     _DEVICES: str = const("devices")
     _PROFILES: str = const("profiles")
+    _FAVORITE_PROFILE: str = const("favorite_profile")
 
 
 ######################################################################
@@ -146,7 +150,14 @@ def get_profiles() -> dict[str, list[str]]:
     profiles = os.listdir(ServerMethods._PROFILE_PATH)
     profiles = [i.split(".")[0] for i in profiles]
     profiles.sort()
-    return {const(ResponseKey._PROFILES): profiles}
+    _favorite: list[str] = []
+    if ServerMethods._FAVORITE_FILE in profiles:
+        profiles.remove(ServerMethods._FAVORITE_FILE)
+        _favorite = [get_favorite_profile()]
+    return {
+        const(ResponseKey._PROFILES): profiles,
+        const(ResponseKey._FAVORITE_PROFILE): _favorite,
+    }
 
 
 def load_json(json: dict[str, str]) -> dict[str, list[dict[str, object]]]:
@@ -179,6 +190,8 @@ def remove_json(json: dict[str, str]) -> dict[str, list[str]]:
     name = read_profile_json(json)
     path = ServerMethods._PROFILE_PATH + name + ".json"
     os.remove(path)
+    if name == get_favorite_profile():
+        remove_favorite()
     return get_profiles()
 
 
@@ -197,6 +210,21 @@ def save_json(json: dict[str, str]) -> dict[str, list[str]]:
     devices_json["order"] = order  # type: ignore
     with open(path, "w") as f:
         ujson.dump(devices_json, f)
+    return get_profiles()
+
+
+def add_favorite_profile(json: dict[str, str]) -> dict[str, list[str]]:
+    name = read_favorite_profile_json(json)
+    if name == ServerMethods._FAVORITE_FILE:
+        raise ValueError(
+            f"{ServerMethods._FAVORITE_FILE} is a protected file, please use another name."
+        )
+    write_favorite_profile(name)
+    return get_profiles()
+
+
+def delete_favorite_profile() -> dict[str, list[str]]:
+    remove_favorite()
     return get_profiles()
 
 
@@ -277,6 +305,42 @@ def log_exception(func):
 
 
 ######################################################################
+# Main Helper Methods
+######################################################################
+
+
+def load_default_devices() -> None:
+    post("0,1", DEFAULT_DEVICE)  # 1
+    post("2,3", DEFAULT_DEVICE)  # 2
+    post("4,5", DEFAULT_DEVICE)  # 3
+    post("6,7", DEFAULT_DEVICE)  # 4
+    post("8,9", DEFAULT_DEVICE)  # 5
+    post("10,11", DEFAULT_DEVICE)  # 6
+    post("12,13", DEFAULT_DEVICE)  # 7
+    post("14,15", DEFAULT_DEVICE)  # 8
+    post("16,17", DEFAULT_DEVICE)  # 9
+    post("18,19", DEFAULT_DEVICE)  # 10
+    post("20,21", DEFAULT_DEVICE)  # 11
+    post("22,26", DEFAULT_DEVICE)  # 12
+    post("27,28", DEFAULT_DEVICE)  # 13
+
+
+def load_devices() -> None:
+    profile_data = get_profiles()
+    favorites = profile_data.get(ResponseKey._FAVORITE_PROFILE, None)
+    profiles = profile_data.get(ResponseKey._PROFILES, None)
+
+    if favorites and len(favorites) == 1 and profiles and favorites[0] in profiles:
+        try:
+            load_json({const(ProfileRequest._NAME): favorites[0]})
+        except Exception as e:
+            log_record(f"Could not load {favorites}, {e}")
+            load_default_devices()
+    else:
+        load_default_devices()
+
+
+######################################################################
 # API Helper Methods
 ######################################################################
 
@@ -305,6 +369,28 @@ def read_profile_json(json: dict[str, str]) -> str:
     if name is None:
         raise ValueError("Could not find NAME in profile request.")
     return name
+
+
+def read_favorite_profile_json(json: dict[str, str]) -> str:
+    name = json.get(ProfileRequest._FAVORITE, None)
+    if name is None:
+        raise ValueError("Could not find FAVORITE in profile request.")
+    return name
+
+
+def get_favorite_profile() -> str:
+    with open(ServerMethods._FAVORITE_PATH, "r") as f:
+        _favorite = f.read()
+    return _favorite
+
+
+def write_favorite_profile(favorite: str) -> None:
+    with open(ServerMethods._FAVORITE_PATH, "w") as f:
+        f.write(favorite)
+
+
+def remove_favorite() -> None:
+    os.remove(ServerMethods._FAVORITE_PATH)
 
 
 def close_devices(devices: OrderedDict[str, BinaryDevice]) -> None:
