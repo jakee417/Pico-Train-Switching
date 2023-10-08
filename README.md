@@ -124,7 +124,7 @@ Installing the firmware and build files:
 
 1. Run the installation script
    ```sh
-   python3 Pico-Train-Switching/install.py firmware/RPI_PICO_W-20230426-v1.20.0.uf2
+   python3 install.py firmware/RPI_PICO_W-20231005-v1.21.0.uf2
    ```
 
 > [!WARNING]  
