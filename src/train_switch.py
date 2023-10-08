@@ -398,7 +398,7 @@ class DCMotor(StatelessBinaryDevice):
 class StepMotor(PinsMixin):
     _direction: DigitalOutputDevice
     _step: DigitalOutputDevice
-    _DELAY: int = const(1)  # in milliseconds.
+    _DELAY: int = const(500)  # in microseconds.
 
     def __init__(self, direction: int, step: int):
         """
@@ -420,11 +420,12 @@ class StepMotor(PinsMixin):
 
     def on(self, steps: int) -> None:
         _delay = StepMotor._DELAY
+        _time = time
         for _ in range(steps):
             self._step.on(value=1)
-            time.sleep_ms(_delay)
+            _time.sleep_us(_delay)
             self._step.on(value=0)
-            time.sleep_ms(_delay)
+            _time.sleep_us(_delay)
 
     def forward(self, steps: int) -> None:
         self._direction.on(value=1)
