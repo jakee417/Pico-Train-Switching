@@ -398,7 +398,7 @@ class DCMotor(StatelessBinaryDevice):
 class StepMotor(PinsMixin):
     _direction: DigitalOutputDevice
     _step: DigitalOutputDevice
-    _DELAY: int = const(500)  # in microseconds.
+    _DELAY: int = const(66)
 
     def __init__(self, direction: int, step: int):
         """
@@ -423,9 +423,9 @@ class StepMotor(PinsMixin):
         _time = time
         for _ in range(steps):
             self._step.on(value=1)
-            _time.sleep_us(_delay)
+            _time.sleep_ms(_delay)
             self._step.on(value=0)
-            _time.sleep_us(_delay)
+            _time.sleep_ms(_delay)
 
     def forward(self, steps: int) -> None:
         self._direction.on(value=1)
@@ -478,9 +478,8 @@ class StepperMotor(StatelessBinaryDevice):
     on_state = "next"
     off_state = "last"
 
-    _STEPS: int = const(200)
+    _STEPS: int = const(30)
 
-    # Optional[float]
     def __init__(self, **kwargs) -> None:
         """Stepper Motor class wrapping the picozero StepMotor.
 
