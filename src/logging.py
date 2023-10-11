@@ -18,20 +18,22 @@ def log_record(record: str) -> None:
         log_new_record(_new_record)
     else:
         add_record(record=_new_record)
-        delete_k_records(k=Logging._MAX_LINES)
+        # delete_k_records(k=Logging._MAX_LINES)
 
 
 def add_record(record: str) -> None:
     """Extend the log file by one record."""
     with open(Logging._LOG_FILE, "a") as f:
         f.write(record)
+        f.flush()
 
 
 def delete_k_records(k: int) -> None:
     """Deletes the first record in the log file."""
     with open(Logging._LOG_FILE, "r") as f:
         lines = f.readlines()
-        lines = lines if len(lines) <= k else lines[:1]
+        _delete_lines = max(0, len(lines) - k)
+        lines = lines[_delete_lines:]
 
     with open(Logging._LOG_FILE, "w") as f:
         for line in lines:
