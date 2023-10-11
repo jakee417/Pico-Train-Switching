@@ -31,7 +31,7 @@ def delete_k_records(k: int) -> None:
     """Deletes the first record in the log file."""
     with open(Logging._LOG_FILE, "r") as f:
         lines = f.readlines()
-        lines = lines if len(lines) <= k else lines[k:]
+        lines = lines if len(lines) <= k else lines[1:]
 
     with open(Logging._LOG_FILE, "w") as f:
         for line in lines:

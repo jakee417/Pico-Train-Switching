@@ -280,5 +280,6 @@ def server_log_flush(_: Request):
 
 
 def run() -> None:
+    log_flush()
     app.run(host="0.0.0.0", port=80)
     ota_closure()
