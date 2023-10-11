@@ -7,6 +7,8 @@ from micropython import const
 import binascii
 import json
 
+from .logging import log_record
+
 
 class Connect:
     """Singleton for connect attributes/constants."""
@@ -177,10 +179,12 @@ def connect() -> None:
         Connect.sta.active(False)
         connect_as_access_point()
         Connect.nic = Connect.ap
+        log_record("Connected to ap")
     else:
         Connect.ap.disconnect()
         Connect.ap.active(False)
         Connect.nic = Connect.sta
+        log_record("Connected to sta")
 
 
 def connect_as_access_point() -> None:
@@ -218,6 +222,7 @@ def connect_as_station() -> None:
         Connect.sta.connect(ssid, password)
         wait = _MAX_WAIT
         while wait > 0:
+            log_record(f"Attempting connection to ssid: {ssid}")
             if Connect.sta.status() < 0 or Connect.sta.status() >= 3:
                 break
             wait -= 1
