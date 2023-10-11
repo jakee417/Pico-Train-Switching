@@ -6,7 +6,7 @@ from micropython import const
 class Logging:
     """Singleton for logging attributes/constants."""
     _LOG_FILE: str = const("log.txt")
-    _MAX_LINES: int = const(15)
+    _MAX_LINES: int = const(30)
 
 
 def log_record(record: str) -> None:
@@ -31,7 +31,7 @@ def delete_k_records(k: int) -> None:
     """Deletes the first record in the log file."""
     with open(Logging._LOG_FILE, "r") as f:
         lines = f.readlines()
-        lines = lines if len(lines) <= k else lines[1:]
+        lines = lines if len(lines) <= k else lines[:1]
 
     with open(Logging._LOG_FILE, "w") as f:
         for line in lines:
