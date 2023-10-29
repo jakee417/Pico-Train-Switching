@@ -5,6 +5,7 @@ from micropython import const
 
 class Logging:
     """Singleton for logging attributes/constants."""
+
     _LOG_FILE: str = const("log.txt")
     _MAX_LINES: int = const(30)
 
