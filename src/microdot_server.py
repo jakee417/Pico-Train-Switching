@@ -15,6 +15,7 @@ from .server_methods import (
     change_steps,
     get_devices,
     get_profiles,
+    get_steps,
     load_json,
     on_pins,
     off_pins,
@@ -158,11 +159,19 @@ def devices_change(_: Request, pins: str, device_type: str) -> str:
     return dumps(change_pins(pins, device_type))
 
 
+@app.get("/devices/steps/<pins>")
+@log_exception
+@led_flash
+@timed_function
+def devices_steps(_: Request, pins: str) -> str:
+    return dumps(get_steps(pins))
+
+
 @app.get("/devices/steps/<pins>/<steps>")
 @log_exception
 @led_flash
 @timed_function
-def devices_steps(_: Request, pins: str, steps: str) -> str:
+def devices_steps_change(_: Request, pins: str, steps: str) -> str:
     return dumps(change_steps(pins, steps))
 
 
