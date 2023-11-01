@@ -12,6 +12,7 @@ from .connect import (
 from .server_methods import (
     StatusMessage,
     change_pins,
+    change_steps,
     get_devices,
     get_profiles,
     load_json,
@@ -155,6 +156,14 @@ def devices_reset_pins(_: Request, pins: str) -> str:
 @timed_function
 def devices_change(_: Request, pins: str, device_type: str) -> str:
     return dumps(change_pins(pins, device_type))
+
+
+@app.get("/devices/steps/<pins>/<steps>")
+@log_exception
+@led_flash
+@timed_function
+def devices_steps(_: Request, pins: str, steps: int) -> str:
+    return dumps(change_steps(pins, steps))
 
 
 ######################################################################

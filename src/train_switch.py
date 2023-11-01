@@ -199,32 +199,21 @@ class EmptySwitch(StatefulBinaryDevice):
         pass
 
 
-class ServoAngle(object):
-    """Angle for a ServoTrainSwitch."""
-
-    MIN_ANGLE: int = 0
-    MAX_ANGLE: int = 80
-
-
 class ServoTrainSwitch(StatefulBinaryDevice):
     required_pins = 1
     on_state = "straight"
     off_state = "turn"
 
-    def __init__(
-        self,
-        # Optional[float]
-        initial_angle: float = None,  # type: ignore
-        min_angle: int = ServoAngle.MIN_ANGLE,
-        max_angle: int = ServoAngle.MAX_ANGLE,
-        **kwargs,
-    ) -> None:
+    _MIN_ANGLE: int = const(0)
+    _MAX_ANGLE: int = const(80)
+    max_angle: int
+    min_angle: int
+
+    def __init__(self, **kwargs) -> None:
         """Servo class wrapping the gpiozero class for manual train switches.
 
         Args:
             initial_angle: intial angle of the servo
-            min_angle: minimum angle of the angular servo
-            max_angle: maximum angle of the angular servo
 
         References:
             https://gpiozero.readthedocs.io/en/stable/api_output.html#angularservo
@@ -234,9 +223,9 @@ class ServoTrainSwitch(StatefulBinaryDevice):
 
         if len(self.pin) != self.get_required_pins:
             raise ValueError(f"Expecting {self.required_pins} pins. Found {self.pin}")
-        self.min_angle = min_angle
-        self.max_angle = max_angle
-        self.initial_angle = initial_angle
+        self.min_angle = ServoTrainSwitch._MIN_ANGLE
+        self.max_angle = ServoTrainSwitch._MAX_ANGLE
+        self.initial_angle = None
 
         # Supporting math:
         # params for SG90 micro servo:
@@ -258,18 +247,26 @@ class ServoTrainSwitch(StatefulBinaryDevice):
             max_pulse_width=24 / 10000,  # correponds to 12% duty cycle
         )
 
+    @property
+    def steps(self) -> int:
+        return int(self.max_angle - self.min_angle)
+    
+    @steps.setter
+    def steps(self, steps: int) -> None:
+        self.max_angle = steps
+        self.min_angle = ServoTrainSwitch._MIN_ANGLE
+
     def custom_state_setter(self, state: str) -> None:
         pass
 
-    @staticmethod
-    def action_to_angle(action: str) -> float:
+    def action_to_angle(self, action: str) -> float | None:
         """Maps an action to a legal action."""
         if action == ServoTrainSwitch.off_state:
-            angle = ServoAngle.MIN_ANGLE
+            angle = self.min_angle
         elif action == ServoTrainSwitch.on_state:
-            angle = ServoAngle.MAX_ANGLE
+            angle = self.max_angle
         elif action is None:
-            return None  # type: ignore
+            return None
         else:
             raise ValueError(
                 "Invalid command to train switch." + f"\n Found action: {action}"
@@ -277,7 +274,6 @@ class ServoTrainSwitch(StatefulBinaryDevice):
         return angle
 
     def _action(self, action: str) -> str:
-        # Optional[float]
         angle = self.action_to_angle(action)
         self.servo.angle = angle
         return str(angle)
@@ -479,6 +475,7 @@ class StepperMotor(StatelessBinaryDevice):
     off_state = "last"
 
     _STEPS: int = const(30)
+    _steps: int
 
     def __init__(self, **kwargs) -> None:
         """Stepper Motor class wrapping the picozero StepMotor.
@@ -492,15 +489,24 @@ class StepperMotor(StatelessBinaryDevice):
             raise ValueError(f"Expecting {self.required_pins} pins. Found {self.pin}")
 
         self.motor = StepMotor(direction=self.pin[0], step=self.pin[1])
+        self.steps = StepperMotor._STEPS
+
+    @property
+    def steps(self) -> int:
+        return self._steps
+    
+    @steps.setter
+    def steps(self, steps: int) -> None:
+        self._steps = steps
 
     def custom_state_setter(self, state: str) -> None:
         pass
 
     def _action(self, action: str) -> str:
         if action == DCMotor.on_state:
-            self.motor.forward(steps=StepperMotor._STEPS)
+            self.motor.forward(steps=self.steps)
         elif action == DCMotor.off_state:
-            self.motor.backward(steps=StepperMotor._STEPS)
+            self.motor.backward(steps=self.steps)
         elif action is None:
             # TODO: Implement a sleep function
             pass

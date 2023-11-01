@@ -266,6 +266,16 @@ def app_ota() -> None:
     ServerMethods.update_flag = True
 
 
+def change_steps(pins: str, steps: int) -> dict[str, list[dict[str, object]]]:
+    _pins = str(convert_csv_tuples(pins))
+    device = ServerMethods.devices[_pins]
+    if hasattr(device, "steps"):
+        ServerMethods.devices[_pins].steps = steps
+    else:
+        raise ValueError(f"Expecting the device to have steps. Found {type(device)}.")
+    return get_return_dict(OrderedDict({const(_pins): ServerMethods.devices[_pins]}))
+
+
 ######################################################################
 # Decorators
 ######################################################################
