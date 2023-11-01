@@ -162,7 +162,7 @@ def devices_change(_: Request, pins: str, device_type: str) -> str:
 @log_exception
 @led_flash
 @timed_function
-def devices_steps(_: Request, pins: str, steps: int) -> str:
+def devices_steps(_: Request, pins: str, steps: str) -> str:
     return dumps(change_steps(pins, steps))
 
 
