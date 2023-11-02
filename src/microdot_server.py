@@ -167,7 +167,7 @@ def devices_steps(_: Request, pins: str) -> str:
     return dumps(get_steps(pins))
 
 
-@app.get("/devices/steps/<pins>/<steps>")
+@app.put("/devices/steps/<pins>/<steps>")
 @log_exception
 @led_flash
 @timed_function

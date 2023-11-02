@@ -1,5 +1,5 @@
 {
-    "tag": "v0.0.11",
+    "tag": "v0.0.12",
     "files": [
         "main.py",
         "bin/lib/__init__.mpy",
