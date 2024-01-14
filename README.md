@@ -77,7 +77,13 @@
 ## About The Project
 MicroPython REST API hosted from a [`Raspberry Pi Pico W`](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html) capable of controlling Rail Yard devices. 
 
-[![iOS Logo][ios-logo] Rail Yard](https://apps.apple.com/us/app/rail-yard/id1664043785) is an `iOS` app that communicates with the REST API. Download the app here: ...
+[![iOS Logo][ios-logo] Rail Yard](https://apps.apple.com/us/app/rail-yard/id1664043785) is an `iOS` app that communicates with the REST API. Download the app here:
+
+<div align="center">
+  <a href="https://apps.apple.com/us/app/rail-yard/id1664043785">
+    <img src="images/app_store.png" alt="Logo" width="200" height="60">
+  </a>
+</div>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -184,3 +190,4 @@ Project Link: [https://github.com/jakee417/Pico-Train-Switching](https://github.
 [license-shield]: https://img.shields.io/github/license/jakee417/Pico-Train-Switching.svg?style=for-the-badge
 [license-url]: https://github.com/jakee417/Pico-Train-Switching/blob/main/LICENSE
 [ios-logo]: images/20.png
+[ios-store]: images/app_store.png
