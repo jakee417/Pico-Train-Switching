@@ -77,7 +77,7 @@
 ## About The Project
 MicroPython REST API hosted from a [`Raspberry Pi Pico W`](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html) capable of controlling Rail Yard devices. 
 
-[![iOS Logo][ios-logo]](https://example.com) Rail Yard is an `iOS` app that communicates with the REST API. Download the app here: ...
+[![iOS Logo][ios-logo] Rail Yard](https://apps.apple.com/us/app/rail-yard/id1664043785) is an `iOS` app that communicates with the REST API. Download the app here: ...
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
