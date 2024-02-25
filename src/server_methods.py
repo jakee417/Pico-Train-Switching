@@ -2,7 +2,6 @@ import os
 import gc
 import io
 import sys
-import time
 import ujson
 from machine import reset, Timer
 from collections import OrderedDict
@@ -293,28 +292,17 @@ def change_steps(pins: str, steps: str) -> dict[str, list[dict[str, object]]]:
 def led_flash(func):
     async def wrapper(*args, **kwargs):
         pico_led.on()
-        await func(*args, **kwargs)
+        results = await func(*args, **kwargs)
         pico_led.off()
+        return results
 
     return wrapper
-
-
-def timed_function(func):
-    myname = str(func).split(" ")[1]
-
-    async def new_func(*args, **kwargs):
-        t = time.ticks_us()
-        await func(*args, **kwargs)
-        delta = time.ticks_diff(time.ticks_us(), t)
-        log_record("{} - {:6.1f}(ms)".format(myname, delta / 1000))
-
-    return new_func
 
 
 def log_exception(func):
     async def new_func(*args, **kwargs):
         try:
-            await func(*args, **kwargs)
+            return await func(*args, **kwargs)
         except Exception as e:
             buffer = io.StringIO()
             sys.print_exception(e, buffer)
