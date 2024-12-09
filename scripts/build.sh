@@ -2,7 +2,7 @@
 RED='\033[0;31m'
 NC='\033[0m'
 source .venv/bin/activate
-files=$(find src | grep "\.py")
+files=$(find src | grep "\.py" | grep -v "\.pyc")
 total="$(echo $files | wc -w | tr -d ' ')"
 echo "----------------------------------"
 echo "Building [$total] files..."

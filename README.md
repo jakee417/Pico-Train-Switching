@@ -128,9 +128,13 @@ Clone the repo:
 ### Installation
 Installing the firmware and build files:
 
-1. Run the installation script
+1. Run the installation script for [Raspberry pi pico w](https://www.raspberrypi.com/documentation/microcontrollers/pico-series.html#raspberry-pi-pico-w):
    ```sh
-   python3 install.py firmware/RPI_PICO_W-20231005-v1.21.0.uf2
+   python3 install.py firmware/RPI_PICO_W-20241129-v1.24.1.uf2
+   ```
+   Or for [:](https://www.raspberrypi.com/documentation/microcontrollers/pico-series.html#raspberry-pi-pico-2-w):
+   ```sh
+   python3 install.py -v /Volumes/RP2350 firmware/mp_firmware_unofficial_latest.uf2
    ```
 
 > [!WARNING]  
