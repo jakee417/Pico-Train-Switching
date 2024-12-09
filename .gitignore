@@ -7,3 +7,5 @@
 .micropico
 Pico-Train-Switching.code-workspace
 .venv/*
+typings/*
+__pycache__/
