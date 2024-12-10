@@ -4,44 +4,34 @@ import rp2
 
 
 # PIO state machine for RGB. Pulls 24 bits (rgb -> 3 * 8bit) automatically
-@rp2.asm_pio(
-    sideset_init=rp2.PIO.OUT_LOW,
-    out_shiftdir=rp2.PIO.SHIFT_LEFT,
-    autopull=True,
-    pull_thresh=24,
-)
+@rp2.asm_pio(sideset_init=rp2.PIO.OUT_LOW, out_shiftdir=rp2.PIO.SHIFT_LEFT, autopull=True, pull_thresh=24)
 def ws2812():
     T1 = 2
     T2 = 5
     T3 = 3
     wrap_target()
     label("bitloop")
-    out(x, 1).side(0)[T3 - 1]
-    jmp(not_x, "do_zero").side(1)[T1 - 1]
-    jmp("bitloop").side(1)[T2 - 1]
+    out(x, 1)               .side(0)    [T3 - 1]
+    jmp(not_x, "do_zero")   .side(1)    [T1 - 1]
+    jmp("bitloop")          .side(1)    [T2 - 1]
     label("do_zero")
-    nop().side(0)[T2 - 1]
+    nop()                   .side(0)    [T2 - 1]
     wrap()
 
 
 # PIO state machine for RGBW. Pulls 32 bits (rgbw -> 4 * 8bit) automatically
-@rp2.asm_pio(
-    sideset_init=rp2.PIO.OUT_LOW,
-    out_shiftdir=rp2.PIO.SHIFT_LEFT,
-    autopull=True,
-    pull_thresh=32,
-)
+@rp2.asm_pio(sideset_init=rp2.PIO.OUT_LOW, out_shiftdir=rp2.PIO.SHIFT_LEFT, autopull=True, pull_thresh=32)
 def sk6812():
     T1 = 2
     T2 = 5
     T3 = 3
     wrap_target()
     label("bitloop")
-    out(x, 1).side(0)[T3 - 1]
-    jmp(not_x, "do_zero").side(1)[T1 - 1]
-    jmp("bitloop").side(1)[T2 - 1]
+    out(x, 1)               .side(0)    [T3 - 1]
+    jmp(not_x, "do_zero")   .side(1)    [T1 - 1]
+    jmp("bitloop")          .side(1)    [T2 - 1]
     label("do_zero")
-    nop().side(0)[T2 - 1]
+    nop()                   .side(0)    [T2 - 1]
     wrap()
 
 
@@ -68,7 +58,6 @@ slice_maker = slice_maker_class()
 # Example: in 'GRBW' we want final form of 0bGGRRBBWW, meaning G with index 0 needs to be shifted 3 * 8bit ->
 # 'G' on index 0: 0b00 ^ 0b11 -> 0b11 (3), just as we wanted.
 # Same hold for every other index (and - 1 at the end for 3 letter strings).
-
 
 class Neopixel:
     # Micropython doesn't implement __slots__, but it's good to have a place
@@ -97,29 +86,17 @@ class Neopixel:
         """
         self.pixels = array.array("I", [0] * num_leds)
         self.mode = mode
-        self.W_in_mode = "W" in mode
+        self.W_in_mode = 'W' in mode
         if self.W_in_mode:
             # RGBW uses different PIO state machine configuration
-            self.sm = rp2.StateMachine(
-                state_machine, sk6812, freq=8000000, sideset_base=Pin(pin)
-            )
+            self.sm = rp2.StateMachine(state_machine, sk6812, freq=8000000, sideset_base=Pin(pin))
             # tuple of values required to shift bit into position (check class desc.)
-            self.shift = (
-                (mode.index("R") ^ 3) * 8,
-                (mode.index("G") ^ 3) * 8,
-                (mode.index("B") ^ 3) * 8,
-                (mode.index("W") ^ 3) * 8,
-            )
+            self.shift = ((mode.index('R') ^ 3) * 8, (mode.index('G') ^ 3) * 8,
+                          (mode.index('B') ^ 3) * 8, (mode.index('W') ^ 3) * 8)
         else:
-            self.sm = rp2.StateMachine(
-                state_machine, ws2812, freq=8000000, sideset_base=Pin(pin)
-            )
-            self.shift = (
-                ((mode.index("R") ^ 3) - 1) * 8,
-                ((mode.index("G") ^ 3) - 1) * 8,
-                ((mode.index("B") ^ 3) - 1) * 8,
-                0,
-            )
+            self.sm = rp2.StateMachine(state_machine, ws2812, freq=8000000, sideset_base=Pin(pin))
+            self.shift = (((mode.index('R') ^ 3) - 1) * 8, ((mode.index('G') ^ 3) - 1) * 8,
+                          ((mode.index('B') ^ 3) - 1) * 8, 0)
         self.sm.active(1)
         self.num_leds = num_leds
         self.delay = delay
@@ -142,9 +119,7 @@ class Neopixel:
             brightness = 255
         self.brightnessvalue = brightness
 
-    def set_pixel_line_gradient(
-        self, pixel1, pixel2, left_rgb_w, right_rgb_w, how_bright=None
-    ):
+    def set_pixel_line_gradient(self, pixel1, pixel2, left_rgb_w, right_rgb_w, how_bright=None):
         """
         Create a gradient with two RGB colors between "pixel1" and "pixel2" (inclusive)
 
@@ -165,7 +140,7 @@ class Neopixel:
         g_diff = right_rgb_w[1] - left_rgb_w[1]
         b_diff = right_rgb_w[2] - left_rgb_w[2]
         if with_W:
-            w_diff = right_rgb_w[3] - left_rgb_w[3]
+            w_diff = (right_rgb_w[3] - left_rgb_w[3])
 
         for i in range(right_pixel - left_pixel + 1):
             fraction = i / (right_pixel - left_pixel)
@@ -190,7 +165,7 @@ class Neopixel:
         :return: None
         """
         if pixel2 >= pixel1:
-            self.set_pixel(slice_maker[pixel1 : pixel2 + 1], rgb_w, how_bright)
+            self.set_pixel(slice_maker[pixel1:pixel2 + 1], rgb_w, how_bright)
 
     def set_pixel(self, pixel_num, rgb_w, how_bright=None):
         """
@@ -238,14 +213,14 @@ class Neopixel:
         b = (balance >> sh_B) & 255
         r = (balance >> sh_R) & 255
         g = (balance >> sh_G) & 255
-        red = int(r * 255 / self.brightness())
-        green = int(g * 255 / self.brightness())
-        blue = int(b * 255 / self.brightness())
+        red = int(r * 255 / self.brightness() )
+        green = int(g * 255 / self.brightness() )
+        blue = int(b * 255 / self.brightness() )
         if self.W_in_mode:
-            white = int(w * 255 / self.brightness())
-            return (red, green, blue, white)
+            white = int(w * 255 / self.brightness() )
+            return (red,green,blue,white)
         else:
-            return (red, green, blue)
+            return (red,green,blue)
 
     def __setitem__(self, idx, rgb_w):
         """
@@ -268,9 +243,7 @@ class Neopixel:
                 for rgb_i, pixel_i in enumerate(range(*idx.indices(self.num_leds))):
                     self.set_pixel(pixel_i, rgb_w[rgb_i])
             else:
-                raise ValueError(
-                    "Index must be a slice when setting multiple pixels as list"
-                )
+                raise ValueError("Index must be a slice when setting multiple pixels as list")
         else:
             self.set_pixel(idx, rgb_w)
 
@@ -368,7 +341,7 @@ class Neopixel:
         cut = 8
         if self.W_in_mode:
             cut = 0
-
+        
         self.sm.put(self.pixels, cut)
 
         time.sleep(self.delay)

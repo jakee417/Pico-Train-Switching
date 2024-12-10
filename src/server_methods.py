@@ -10,7 +10,13 @@ from micropython import const
 from .config import ota
 from .logging import log_record
 from .lib.picozero import pico_led
-from .train_switch import CLS_MAP, BinaryDevice, DEFAULT_DEVICE
+from .train_switch import (
+    CLS_MAP,
+    LIGHT_BEAM_NAME,
+    BinaryDevice,
+    DEFAULT_DEVICE,
+    light_beam_factory,
+)
 
 
 class ServerMethods:
@@ -111,7 +117,11 @@ def change_pins(pins: str, device_type: str) -> dict[str, list[dict[str, object]
     Notes:
         The current amount of pins must match the new amount of pins.
     """
-    new_cls = CLS_MAP.get(device_type, None)
+    new_cls = (
+        CLS_MAP.get(device_type, None)
+        if LIGHT_BEAM_NAME not in device_type
+        else light_beam_factory(name=device_type)
+    )
     _pins = convert_csv_tuples(pins)
 
     # Need the new class and ensure the pins were already being used.
