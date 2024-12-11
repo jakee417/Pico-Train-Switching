@@ -1,13 +1,19 @@
 """Device classes"""
 
+from collections import deque
 from neopixel import NeoPixel as _NeoPixel
 import time
 import sys
 from machine import Pin, Timer
 from micropython import const
 
-from .lib.picozero import DigitalOutputDevice, AngularServo, Motor, Servo, PinsMixin
-from .lib.neopixel import Neopixel as _Neopixel
+from .lib.picozero import (
+    DigitalOutputDevice,
+    AngularServo,
+    Motor,
+    Servo,
+    PinsMixin,
+)
 
 
 class BinaryDevice(object):
@@ -522,13 +528,27 @@ class StepperMotor(StatelessBinaryDevice):
 
 
 class LightBeam(StatefulBinaryDevice):
+    r: int
+    g: int
+    b: int
+    n: int
+    delay: int
+    beam_length: int
     required_pins = 1
     on_state = "on"
     off_state = "off"
-    LIGHT = (255, 0, 0)
     DARK = (0, 0, 0)
 
-    def __init__(self, n: int, **kwargs) -> None:
+    def __init__(
+        self,
+        n: int,
+        r: int = 10,
+        g: int = 0,
+        b: int = 0,
+        delay: int = 10,
+        beam_length: int = 3,
+        **kwargs,
+    ) -> None:
         """An on/off light beam for controlling a NeoPixel (WS2812b) LED.
 
         References:
@@ -539,11 +559,24 @@ class LightBeam(StatefulBinaryDevice):
         if len(self.pin) != self.get_required_pins:
             raise ValueError(f"Expecting one pin. Found {self.pin}")
 
-        pin = Pin(id=self.pin[0])
-        self.pixels = _NeoPixel(pin=pin, n=n)
+        self._pin = Pin(self.pin[0], Pin.OUT)
+        self.n = int(n)
+        self.r = int(r)
+        self.g = int(g)
+        self.b = int(b)
+        self.delay = int(delay)
+        self.beam_length = int(beam_length)
+
+        if self.delay < 0:
+            raise ValueError(f"delay must be positive, found {self.delay}")
+
+        if self.beam_length > self.n:
+            raise ValueError(f"{self.beam_length} must be <= {self.n}")
+
+        self.pixels = _NeoPixel(pin=self._pin, n=self.n)
 
     def _pixels_clear(self) -> None:
-        self.pixels.fill(pixel=self.DARK)
+        self.pixels.fill(self.DARK)
 
     def _pixel_set(self, i: int, color: tuple[int, ...]) -> None:
         self.pixels[i] = color
@@ -557,25 +590,33 @@ class LightBeam(StatefulBinaryDevice):
 
     def pixels_cycle(self, color: tuple[int, ...]) -> None:
         n = len(self.pixels)
-        j = None
+        queue = deque([], self.beam_length + 1)
         for i in range(n):
+            # Light new pixel
+            queue.append(i)
             self._pixel_set(i=i, color=color)
-            # self._pixel_write()
-            if j is not None:
-                self._pixel_set(i=j, color=self.DARK)
-            j = i
             self._pixel_write()
-            time.sleep_ms(self._BLINK)
-        if j is not None:
+            # `beam_length` lights are on.
+            time.sleep_ms(self.delay)
+            # Enforce beam length
+            if self.beam_length <= len(queue):
+                j = queue.popleft()
+                self._pixel_set(i=j, color=self.DARK)
+                self._pixel_write()
+            # `beam_length - 1` lights are on.
+            time.sleep_ms(self.delay)
+        # Turn off any remaining pixels.
+        for j in queue:
             self._pixel_set(i=j, color=self.DARK)
-        self._pixel_write()
+            self._pixel_write()
+            time.sleep_ms(self.delay)
 
     def custom_state_setter(self, state: str) -> None:
         pass
 
     def _action(self, action: str) -> str:
         if action == LightBeam.on_state:
-            self.pixels_cycle(color=self.LIGHT)
+            self.pixels_cycle(color=(self.r, self.g, self.b))
             # Always return to the user in the off state.
             self.state = LightBeam.off_state
             return LightBeam.off_state
@@ -589,63 +630,14 @@ class LightBeam(StatefulBinaryDevice):
 
     def __del__(self) -> None:
         self.pixels_reset()
+        self._pin = None
 
 
-LIGHT_BEAM_NAME = LightBeam.__name__
+class DoubleLightBeam(LightBeam):
+    required_pins = 2
 
-
-def light_beam_factory(name: str) -> type[BinaryDevice]:
-    """Creates a DoubleLightBeam dynamically based off the number of leds.
-
-    Args:
-        name: LightBeam10 will create a DoubleLightBeam with 10 leds.
-    """
-    if LIGHT_BEAM_NAME not in name:
-        raise ValueError(f"Cannot construct {LIGHT_BEAM_NAME} from {name}.")
-    suffix = name.replace(LIGHT_BEAM_NAME, "")
-    n = int(suffix) if len(suffix) > 0 else 1
-
-    if n < 1:
-        raise ValueError(f"Cannot construct {LIGHT_BEAM_NAME} with n={n}<1")
-
-    class DoubleLightBeam(LightBeam):
-        required_pins = 2
-
-        def __init__(self, **kwargs) -> None:
-            super(DoubleLightBeam, self).__init__(n=n, **kwargs)
-
-    return DoubleLightBeam
-
-
-class VariableLightBeam(LightBeam):
-
-    def __init__(self, n: int, **kwargs) -> None:
-        """An on/off switch for controlling a NeoPixel (WS2812b) LED.
-
-        References:
-            https://github.com/blaz-r/pi_pico_neopixel/blob/main/neopixel.py
-        """
-        super(VariableLightBeam, self).__init__(**kwargs)
-
-        if len(self.pin) != self.get_required_pins:
-            raise ValueError(f"Expecting one pin. Found {self.pin}")
-
-        self.pixels = _Neopixel(
-            num_leds=n,
-            state_machine=0,
-            pin=self.pin[0],
-            mode="RGB",
-        )
-        self.pixels.brightness(42)
-
-    def _pixels_clear(self) -> None:
-        self.pixels.clear()
-
-    def _pixel_set(self, i: int, color: tuple[int, ...]) -> None:
-        return self.pixels.set_pixel(i, color)
-
-    def _pixel_write(self) -> None:
-        self.pixels.show()
+    def __init__(self, **kwargs) -> None:
+        super(DoubleLightBeam, self).__init__(**kwargs)
 
 
 class RelayTrainSwitch(StatefulBinaryDevice):

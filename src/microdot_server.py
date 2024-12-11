@@ -142,8 +142,8 @@ async def devices_reset_pins(_: Request, pins: str) -> str:
 @app.put("/devices/change/<pins>/<device_type>")
 @log_exception
 @led_flash
-async def devices_change(_: Request, pins: str, device_type: str) -> str:
-    return dumps(change_pins(pins, device_type))
+async def devices_change(request: Request, pins: str, device_type: str) -> str:
+    return dumps(change_pins(pins=pins, device_type=device_type, **request.args))
 
 
 @app.get("/devices/steps/<pins>")

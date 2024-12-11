@@ -1,3 +1,4 @@
+from typing import Set
 import os
 import time
 import shutil
@@ -5,6 +6,9 @@ import glob
 import sys
 import subprocess
 import argparse
+
+
+LS_CMD = "/dev/tty.usbmodem*"
 
 
 class TextColors:
@@ -132,25 +136,26 @@ def update_firmware(args: argparse.Namespace) -> bool:
         return False
 
 
-def copy_build_files() -> None:
+def copy_build_files(pre_search: Set[str]) -> None:
     """Copy a build directory."""
     _color = TextColors.CYAN
-    _cmd = "/dev/tty.usbmodem*"
-    print_color(f"Watching for serial: {_cmd}", color=_color)
+    print_color(f"Watching for serial: {LS_CMD}", color=_color)
     while True:
-        search = glob.glob(_cmd)
+        search = list(set(glob.glob(LS_CMD)) - pre_search)
         if len(search) == 1:
-            print_color("Serial connection detected, copying files", color=_color)
+            print_color(f"Serial connection detected {search[0]}, copying files", color=_color)
             print_color("DO NOT CTRL+C!", color=TextColors.RED)
             try:
-                return_code = subprocess.run(["sh", "scripts/copy.sh"], check=True).returncode
+                return_code = subprocess.run(
+                    ["sh", "scripts/copy.sh", search[0]], check=True
+                ).returncode
             except subprocess.CalledProcessError as err:
                 return_code = err.returncode
             if return_code == 0:
                 return
             else:
                 print_color(
-                    f"Copy was not successfuly, searching for serial: {_cmd}",
+                    f"Copy was not successfuly, searching for serial: {LS_CMD}",
                     color=TextColors.RED,
                 )
         else:
@@ -163,6 +168,7 @@ def copy_build_files() -> None:
 
 def run(args: argparse.Namespace) -> None:
     """Main event loop listening for mounted drives and serial connections."""
+    pre_search = glob.glob(LS_CMD)
     print_color(f"Watching for volume: {args.volume_path}")
     try:
         while True:
@@ -174,7 +180,7 @@ def run(args: argparse.Namespace) -> None:
                     if args.copy:
                         # Wait a bit to let the usbmodem attach.
                         time.sleep(1.0)
-                        copy_build_files()
+                        copy_build_files(pre_search=set(pre_search))
                 print_color("SAFE TO CTRL+C!", color=TextColors.GREEN)
             breadcrumb()
     except KeyboardInterrupt:

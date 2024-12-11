@@ -13,7 +13,7 @@ if [[ $(echo $installed | wc -w) -eq 0 ]]; then
 fi
 
 # Start the file copy to a serial connection.
-export AMPY_PORT="$(ls /dev/tty.usbmodem*)"
+export AMPY_PORT=$1
 
 echo -e "${BLUE}🗑️  Reset build files${NC}"
 # Clear directories on the board

@@ -12,10 +12,9 @@ from .logging import log_record
 from .lib.picozero import pico_led
 from .train_switch import (
     CLS_MAP,
-    LIGHT_BEAM_NAME,
     BinaryDevice,
     DEFAULT_DEVICE,
-    light_beam_factory,
+    EmptySwitch,
 )
 
 
@@ -111,17 +110,15 @@ def reset_pins(pins: str) -> dict[str, list[dict[str, object]]]:
     return get_return_dict(OrderedDict({const(_pins): ServerMethods.devices[_pins]}))
 
 
-def change_pins(pins: str, device_type: str) -> dict[str, list[dict[str, object]]]:
+def change_pins(
+    pins: str, device_type: str, **kwargs
+) -> dict[str, list[dict[str, object]]]:
     """Change a device type for a set of pins.
 
     Notes:
         The current amount of pins must match the new amount of pins.
     """
-    new_cls = (
-        CLS_MAP.get(device_type, None)
-        if LIGHT_BEAM_NAME not in device_type
-        else light_beam_factory(name=device_type)
-    )
+    new_cls = CLS_MAP.get(device_type, None)
     _pins = convert_csv_tuples(pins)
 
     # Need the new class and ensure the pins were already being used.
@@ -143,7 +140,20 @@ def change_pins(pins: str, device_type: str) -> dict[str, list[dict[str, object]
 
         # Perform the change.
         current_device.close()
-        new_device = new_cls(pin=_pins)
+        try:
+            new_device = new_cls(pin=_pins, **kwargs)
+        except Exception as e:
+            log_record(f"Found error while creating {device_type} on {str(_pins)}")
+            log_exception_traceback(e=e)
+            if new_cls.required_pins == EmptySwitch.required_pins:
+                new_device = EmptySwitch(pin=_pins)
+                log_record(f"Using {EmptySwitch.__name__} as a backup device")
+            else:
+                raise ValueError(
+                    f"Could not start {device_type} on {str(_pins)} and no backup devices were found"
+                )
+
+        # Update the devices.
         ServerMethods.devices.update({const(str(_pins)): new_device})
         return get_return_dict(
             OrderedDict({const(str(_pins)): ServerMethods.devices[str(_pins)]})
@@ -314,9 +324,7 @@ def log_exception(func):
         try:
             return await func(*args, **kwargs)
         except Exception as e:
-            buffer = io.StringIO()
-            sys.print_exception(e, buffer)
-            log_record(buffer.getvalue())
+            log_exception_traceback(e=e)
 
     return new_func
 
@@ -360,6 +368,12 @@ def load_devices() -> None:
 ######################################################################
 # API Helper Methods
 ######################################################################
+
+
+def log_exception_traceback(e: Exception) -> None:
+    buffer = io.StringIO()
+    sys.print_exception(e, buffer)
+    log_record(buffer.getvalue())
 
 
 def get_return_dict(
