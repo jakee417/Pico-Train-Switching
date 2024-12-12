@@ -1,3 +1,4 @@
+#!/bin/bash
 IP_ADDRESS=http://192.168.4.1
 echo "++++NETWORK TEST++++"
 echo

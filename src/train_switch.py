@@ -7,6 +7,13 @@ import sys
 from machine import Pin, Timer
 from micropython import const
 
+from .timer import (
+    dequeue_from_timer,
+    enqueue_to_timer,
+    start_timer,
+    stop_timer,
+)
+
 from .lib.picozero import (
     DigitalOutputDevice,
     AngularServo,
@@ -449,35 +456,6 @@ class StepMotor(PinsMixin):
         self._step.close()
 
 
-class AsyncStepMotor(StepMotor):
-    _step_count: int
-    _timer: Timer
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self._timer = Timer()
-
-    def step_closure(self, steps: int):
-        # Reset the timer and step count.
-        self._step_count = 0
-        _stop_condition: int = steps * 2
-
-        def step(timer: Timer):
-            self._step.toggle()
-            self._step_count += 1
-            if self._step_count >= _stop_condition:
-                timer.deinit()
-
-        return step
-
-    def on(self, steps: int) -> None:
-        self._timer.init(
-            mode=Timer.PERIODIC,
-            period=StepMotor._DELAY,
-            callback=self.step_closure(steps=steps),
-        )
-
-
 class StepperMotor(StatelessBinaryDevice):
     required_pins = 2
     on_state = "next"
@@ -534,6 +512,7 @@ class LightBeam(StatefulBinaryDevice):
     n: int
     delay: int
     beam_length: int
+    reverse_at_end: bool
     required_pins = 1
     on_state = "on"
     off_state = "off"
@@ -547,6 +526,7 @@ class LightBeam(StatefulBinaryDevice):
         b: int = 0,
         delay: int = 10,
         beam_length: int = 3,
+        reverse_at_end: int = 0,
         **kwargs,
     ) -> None:
         """An on/off light beam for controlling a NeoPixel (WS2812b) LED.
@@ -566,6 +546,7 @@ class LightBeam(StatefulBinaryDevice):
         self.b = int(b)
         self.delay = int(delay)
         self.beam_length = int(beam_length)
+        _reverse_at_end = int(reverse_at_end)
 
         if self.delay < 0:
             raise ValueError(f"delay must be positive, found {self.delay}")
@@ -573,6 +554,12 @@ class LightBeam(StatefulBinaryDevice):
         if self.beam_length > self.n:
             raise ValueError(f"{self.beam_length} must be <= {self.n}")
 
+        if _reverse_at_end not in [0, 1]:
+            raise ValueError(
+                f"reverse_at_end must be either 0 or 1. Found {reverse_at_end}"
+            )
+
+        self.reverse_at_end = bool(_reverse_at_end)
         self.pixels = _NeoPixel(pin=self._pin, n=self.n)
 
     def _pixels_clear(self) -> None:
@@ -588,10 +575,15 @@ class LightBeam(StatefulBinaryDevice):
         self._pixels_clear()
         self._pixel_write()
 
-    def pixels_cycle(self, color: tuple[int, ...]) -> None:
+    def pixels_cycle(
+        self,
+        color: tuple[int, ...],
+        reverse: bool,
+    ) -> None:
         n = len(self.pixels)
         queue = deque([], self.beam_length + 1)
-        for i in range(n):
+        loop = reversed(range(n)) if reverse else range(n)
+        for i in loop:
             # Light new pixel
             queue.append(i)
             self._pixel_set(i=i, color=color)
@@ -606,7 +598,8 @@ class LightBeam(StatefulBinaryDevice):
             # `beam_length - 1` lights are on.
             time.sleep_ms(self.delay)
         # Turn off any remaining pixels.
-        for j in queue:
+        remainder = reversed(queue) if reverse else queue
+        for j in remainder:
             self._pixel_set(i=j, color=self.DARK)
             self._pixel_write()
             time.sleep_ms(self.delay)
@@ -614,16 +607,21 @@ class LightBeam(StatefulBinaryDevice):
     def custom_state_setter(self, state: str) -> None:
         pass
 
+    def on_action(self, timer: Timer) -> None:
+        self.pixels_cycle(color=(self.r, self.g, self.b), reverse=False)
+        if self.reverse_at_end:
+            self.pixels_cycle(color=(self.r, self.g, self.b), reverse=True)
+
     def _action(self, action: str) -> str:
         if action == LightBeam.on_state:
-            self.pixels_cycle(color=(self.r, self.g, self.b))
-            # Always return to the user in the off state.
-            self.state = LightBeam.off_state
-            return LightBeam.off_state
+            enqueue_to_timer(id=id(self), callback=self.on_action)
+            return LightBeam.on_state
         elif action == LightBeam.off_state:
+            dequeue_from_timer(id=id(self))
             self.pixels_reset()
             return LightBeam.off_state
         elif action is None:
+            dequeue_from_timer(id=id(self))
             self.pixels_reset()
             return
         raise ValueError("Invalid command to NeoPixel." + f"\n Found action: {action}")
@@ -766,11 +764,11 @@ class Disconnect(OnOff):
 
     def safe_close_relay(self, timer: Timer) -> None:
         # If relay is on, turn it off
-        # print(f"\n {self}: \n" + f"++++ Background Thread: Checking for shutdown...")
         if self.relay.value == 1:
-            # print(f"\n {self}: \n" + f"++++ Background Thread: auto-shutdown")
             self.relay.off()
             self.state = self.off_state
+        # Now its safe to restart other timer work.
+        start_timer()
 
     def _action(self, action: str) -> str:
         if action is None or action == Disconnect.off_state:
@@ -780,6 +778,8 @@ class Disconnect(OnOff):
                 self.safe_stop.deinit()
                 self.safe_stop = None
         elif action == Disconnect.on_state:
+            # Give this action priority and temporarily pause all other timers.
+            stop_timer()
             self.relay.on()
             # Wait for 10 seconds, then turn off.
             self.safe_stop = Timer(
