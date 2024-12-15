@@ -4,31 +4,31 @@ echo "++++NETWORK TEST++++"
 echo
 echo "delete logs"
 echo
-CURL -X "DELETE" ${IP_ADDRESS}/log
+curl -X "DELETE" ${IP_ADDRESS}/log
 echo
 echo "status"
 echo
-CURL ${IP_ADDRESS}/
+curl ${IP_ADDRESS}/
 echo
 echo "scan"
 echo
-CURL ${IP_ADDRESS}/scan
+curl ${IP_ADDRESS}/scan
 echo
 echo "network"
 echo
-CURL ${IP_ADDRESS}/network
+curl ${IP_ADDRESS}/network
 echo
 echo "devices"
 echo
-CURL ${IP_ADDRESS}/devices
+curl ${IP_ADDRESS}/devices
 echo
 echo "profiles"
 echo
-CURL ${IP_ADDRESS}/profiles
+curl ${IP_ADDRESS}/profiles
 echo
 echo "log"
 echo
-CURL ${IP_ADDRESS}/log
+curl ${IP_ADDRESS}/log
 echo
 echo "++++NETWORK TEST ✅++++"
 exit 0
