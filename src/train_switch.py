@@ -579,42 +579,72 @@ class LightBeam(StatefulBinaryDevice):
         self,
         color: tuple[int, ...],
         reverse: bool,
-    ) -> None:
+        measure_time: bool,
+    ) -> int:
+        total_time = 0
         n = len(self.pixels)
         queue = deque([], self.beam_length + 1)
         loop = reversed(range(n)) if reverse else range(n)
         for i in loop:
             # Light new pixel
             queue.append(i)
-            self._pixel_set(i=i, color=color)
-            self._pixel_write()
-            # `beam_length` lights are on.
-            time.sleep_ms(self.delay)
+            if not measure_time:
+                self._pixel_set(i=i, color=color)
+                self._pixel_write()
+                # `beam_length` lights are on.
+                time.sleep_ms(self.delay)
+            else:
+                total_time += self.delay
             # Enforce beam length
             if self.beam_length <= len(queue):
                 j = queue.popleft()
-                self._pixel_set(i=j, color=self.DARK)
-                self._pixel_write()
-            # `beam_length - 1` lights are on.
-            time.sleep_ms(self.delay)
+                if not measure_time:
+                    self._pixel_set(i=j, color=self.DARK)
+                    self._pixel_write()
+            if not measure_time:
+                # `beam_length - 1` lights are on.
+                time.sleep_ms(self.delay)
+            else:
+                total_time += self.delay
         # Turn off any remaining pixels.
         remainder = reversed(queue) if reverse else queue
         for j in remainder:
-            self._pixel_set(i=j, color=self.DARK)
-            self._pixel_write()
-            time.sleep_ms(self.delay)
+            if not measure_time:
+                self._pixel_set(i=j, color=self.DARK)
+                self._pixel_write()
+                time.sleep_ms(self.delay)
+            else:
+                total_time += self.delay
+        return total_time
 
     def custom_state_setter(self, state: str) -> None:
         pass
 
-    def on_action(self, timer: Timer) -> None:
-        self.pixels_cycle(color=(self.r, self.g, self.b), reverse=False)
+    def _on_action(self, measure_time: bool) -> int:
+        total_time = 0
+        total_time += self.pixels_cycle(
+            color=(self.r, self.g, self.b),
+            reverse=False,
+            measure_time=measure_time,
+        )
         if self.reverse_at_end:
-            self.pixels_cycle(color=(self.r, self.g, self.b), reverse=True)
+            total_time += self.pixels_cycle(
+                color=(self.r, self.g, self.b),
+                reverse=True,
+                measure_time=measure_time,
+            )
+        return total_time
+
+    def on_action(self, timer: Timer) -> None:
+        self._on_action(measure_time=False)
 
     def _action(self, action: str) -> str:
         if action == LightBeam.on_state:
-            enqueue_to_timer(id=id(self), callback=self.on_action)
+            enqueue_to_timer(
+                id=id(self),
+                callback_time=self._on_action(measure_time=True),
+                callback=self.on_action,
+            )
             return LightBeam.on_state
         elif action == LightBeam.off_state:
             dequeue_from_timer(id=id(self))
