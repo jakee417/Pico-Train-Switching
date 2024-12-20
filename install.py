@@ -59,16 +59,19 @@ def execute_applescript(code: str):
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Pico Firmware Flasher")
     parser.add_argument(
-        "uf2_file_path",
+        "-p",
+        "--uf2_file_path",
         metavar="PATH",
         type=str,
+        default=None,
         help="PATH: location of a uf2 formatted flash file",
     )
     parser.add_argument(
         "-v",
         "--volume_path",
         type=str,
-        default="/Volumes/RPI-RP2",
+        choices=["/Volumes/RPI-RP2", "/Volumes/RP2350"],
+        default=None,
         help="Path to the volume (optional)",
     )
     parser.add_argument(
@@ -87,10 +90,6 @@ def parse_args() -> argparse.Namespace:
     )
     # Parse the command-line arguments
     args = parser.parse_args()
-
-    # Check if the uf2_file_path argument is provided
-    if not args.uf2_file_path:
-        parser.error("uf2 file location is missing.")
 
     return args
 
@@ -138,12 +137,13 @@ def update_firmware(args: argparse.Namespace) -> bool:
 
 def copy_build_files(pre_search: Set[str]) -> None:
     """Copy a build directory."""
-    _color = TextColors.CYAN
-    print_color(f"Watching for serial: {LS_CMD}", color=_color)
     while True:
         search = list(set(glob.glob(LS_CMD)) - pre_search)
         if len(search) == 1:
-            print_color(f"Serial connection detected {search[0]}, copying files", color=_color)
+            print_color(
+                f"Serial connection detected {search[0]}, copying files",
+                color=TextColors.CYAN,
+            )
             print_color("DO NOT CTRL+C!", color=TextColors.RED)
             try:
                 return_code = subprocess.run(
@@ -155,33 +155,32 @@ def copy_build_files(pre_search: Set[str]) -> None:
                 return
             else:
                 print_color(
-                    f"Copy was not successfuly, searching for serial: {LS_CMD}",
+                    f"Copy was not successful, searching for serial: {LS_CMD}",
                     color=TextColors.RED,
                 )
         else:
             print_color(
-                "Serial connection was not unique, ensure the device is the only usb modem",
+                "No unique serial connection found, skipping...",
                 color=TextColors.RED,
             )
-        breadcrumb(color=_color)
+        breadcrumb(color=TextColors.CYAN)
 
 
 def run(args: argparse.Namespace) -> None:
     """Main event loop listening for mounted drives and serial connections."""
     pre_search = glob.glob(LS_CMD)
-    print_color(f"Watching for volume: {args.volume_path}")
+    if args.volume_path:
+        print_color(f"Watching for volume: {args.volume_path}")
     try:
         while True:
             # Check if the RP2 drive is available
-            if os.path.exists(args.volume_path):
+            if args.volume_path and os.path.exists(args.volume_path):
                 if update_firmware(args=args):
                     if args.applescript:
                         execute_applescript(applescript_code)
-                    if args.copy:
-                        # Wait a bit to let the usbmodem attach.
-                        time.sleep(1.0)
-                        copy_build_files(pre_search=set(pre_search))
-                print_color("SAFE TO CTRL+C!", color=TextColors.GREEN)
+            if args.copy:
+                copy_build_files(pre_search=set(pre_search))
+            print_color("SAFE TO CTRL+C!", color=TextColors.GREEN)
             breadcrumb()
     except KeyboardInterrupt:
         print("")
